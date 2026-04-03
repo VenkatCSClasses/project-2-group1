@@ -1,2 +1,13 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/2HAsn8j_)
-[![Open in Codespaces](https://classroom.github.com/assets/launch-codespace-2972f46106e565e64193e422d61a12cf1da4916b45550586e14ef0a7c637dd04.svg)](https://classroom.github.com/open-in-codespaces?assignment_repo_id=23397361)
+# SubSeer: The Household Account Manager
+
+SubSeer is a website that allows users to create and join ‘households’, being able to add and access shared account information. There are two levels of users in each household: managers and members. Managers are able to delete the household, add/remove members, promote/demote managers, add/edit/remove accounts, and review account requests. They can also remove members from being able to view account credentials. Members are able to create requests for new accounts to be stored/created, and they can view account information for ones they have access to. 
+<br><br>
+This website will be primarily used by families/roommates who share different accounts and want one localized place to store account information. It will streamline the communication between members of those groups by allowing everyone to see account information in one place, instead of having to ask around for different credentials. If account credentials are changed for a subscription, all the managers have to do is just update the subscription on SubSeer, then the members with valid permissions can see the new updated account credentials, instead of having to pester others to find them out.
+<br><br>
+*Name is subject to change.*
+<br><br>
+
+# Diagrams
+
+## Use Case Diagram
+![Use Case Diagram Image](/diagrams/UseCase.png)

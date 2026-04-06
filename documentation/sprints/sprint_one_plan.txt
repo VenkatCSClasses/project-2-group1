@@ -1,0 +1,14 @@
+Sprint One Plan:
+(highest up is priority/order)
+
+- Create multiple state diagrams based off of the use case diagrams to clarify different routes
+    - Household Manager
+    - Household Member
+    - User
+- Create subissues based off of those state diagrams, one for each grouping of routes
+- Allow users to login/logout/signup with name, email, and password credentials stored in plain text
+- Allow users to create and view households they are a part of
+- Allow household managers to add/remove household members via an email invite that auto-accepts
+- Allow household managers to delete households they are a part of
+- Allow households to add/remove account info in plain text
+- Allow household managers/members to view all account info

@@ -7,6 +7,15 @@ This website will be primarily used by families/roommates who share different ac
 *Name is subject to change.*
 <br><br>
 
+# Roles
+
+**Product Owner:** Andrew Kaiser <br>
+**Scrum Master:** Sam Knight <br>
+**Developer:** Blake Beeler <br>
+**Developer:** Dena Chen <br>
+**Developer:** Rhys Maryn <br> 
+<br>
+
 # Diagrams
 
 ## Use Case Diagram

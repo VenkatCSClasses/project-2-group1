@@ -1,0 +1,17 @@
+---
+Base User
+---
+stateDiagram
+    [*] --> LoggedIn: Login
+    [*] --> NewAccount: Create New Account
+    NewAccount --> LoggedIn
+    LoggedIn --> AccountDetails:Edit Account
+    AccountDetails --> LoggedIn: Back
+    LoggedIn --> Household: View Households
+    LoggedIn --> Household: Join New Household
+    LoggedIn --> RemovalConfirmation: Remove Household
+    RemovalConfirmation --> LoggedIn: Household Removed
+    Household --> LoggedIn: Back To Account
+    LoggedIn --> HouseholdCreation: Create Household
+    HouseholdCreation --> Household: Creation Sucessful
+    LoggedIn --> [*]: Log Out

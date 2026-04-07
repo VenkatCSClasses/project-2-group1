@@ -22,7 +22,8 @@ erDiagram
         timestamp updated_at
         binary password_salt
         binary password_hash
-    } %% Secret key is generated from password
+    }
+    %% User's secret key is generated from password
 
     group_member {
         integer user_id PK,FK

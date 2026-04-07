@@ -1,0 +1,59 @@
+graph LR
+  user(["👤 User"])
+  manager(["👤 Household Manager"])
+  member(["👤 Household Member"])
+
+  subgraph Menu
+
+    UC1((Login/Logout))
+
+    UC2((Edit Account Details))
+
+    UC3((Create Households))
+
+  end
+
+
+  user --> UC1
+  user --> UC2
+  user --> UC3
+
+  manager --> user
+  member --> user
+
+  subgraph Households
+
+    UC4((Add/Remove Household Members))
+
+    UC5((Delete Household/Leave Household))
+
+    UC6((Promote/Demote Household Managers))
+
+    UC7((Add/Edit/Remove Account Information))
+
+    UC8((Change Account Information View Permissions))
+
+    UC9((Process Member Account Requests))
+
+    UC10((Access Certain Account Information))
+
+    UC11((Make Account Storage Request))
+
+  end
+
+  manager --> UC4
+  manager --> UC5
+  manager --> UC6
+  manager --> UC7
+  manager --> UC8
+  manager --> UC9
+  manager --> UC10
+
+  member --> UC10
+  member --> UC11
+  
+
+
+    
+
+

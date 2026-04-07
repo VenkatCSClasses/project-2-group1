@@ -17,6 +17,7 @@ This website will be primarily used by families/roommates who share different ac
 <br>
 
 # Diagrams
+(diagrams may not be up to date)
 
 ## Use Case Diagram
 ![Use Case Diagram Image](/diagrams/use_case.png)

@@ -19,7 +19,10 @@ This website will be primarily used by families/roommates who share different ac
 # Diagrams
 
 ## Use Case Diagram
-![Use Case Diagram Image](/diagrams/UseCase.png)
+![Use Case Diagram Image](/diagrams/use_case.png)
+
+## Base User State Diagram
+![Base User State Diagram](/diagrams/base_user_state_diagram.png)
 
 # Running the Code
 ```bash

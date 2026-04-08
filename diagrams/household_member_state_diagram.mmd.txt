@@ -1,0 +1,20 @@
+stateDiagram-v2
+    state "Account Information" as s1
+    state "Request New Account Storage " as s2
+    state "Notifications" as s3
+    state "Logged In" as s4
+    state "Log In Page" as s5
+    state login <<choice>>
+
+
+    [*] --> s5 : log in
+    s5 --> login 
+    login --> Error : invalid login
+    login --> s4 : validated
+    s4 --> [*] : log out
+    s4 --> s1 : view accounts info
+    s4 --> s2 : make request
+    s4 --> s3 : view notifications
+    s1 --> s4 : back
+    s2 --> s4 : back
+    s3 --> s4 : back

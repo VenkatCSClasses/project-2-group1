@@ -1,11 +1,11 @@
 erDiagram
-    user_group ||--o{ group_member : "has members"
-    user_account ||--o{ group_member : "acts as"
-    user_group ||--o{ shared_vault_item : "contains"
-    shared_vault_item ||--o{ user_vault_access : "is encrypted into"
-    user_account ||--o{ user_vault_access : "decrypts"
+    household ||--o{ household_membership : "has members"
+    user_account ||--o{ household_membership : "holds one or more"
+    household ||--o{ shared_vault_password : "contains"
+    shared_vault_password ||--o{ user_vault_access : "is encrypted by user's public key"
+    user_account ||--o{ user_vault_access : "decrypts with priv key"
 
-    user_group {
+    household {
         integer group_id PK
         string group_name
         timestamp created_at
@@ -25,7 +25,7 @@ erDiagram
     }
     %% User's secret key is generated from password
 
-    group_member {
+    household_membership {
         integer user_id PK,FK
         integer group_id PK,FK
         string role
@@ -33,7 +33,7 @@ erDiagram
         timestamp updated_at
     }
 
-    shared_vault_item {
+    shared_vault_password {
         integer item_id PK
         integer group_id FK
         string service_name

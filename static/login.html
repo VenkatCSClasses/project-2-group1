@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- INSERT_HEAD_HTML -->
+    <title>Document</title>
+  </head>
+  <body>
+    <div class="window">
+      <div class="title-bar">
+        <div class="title-bar-text">
+          Login
+        </div>
+      </div>
+      <div class="window-body">
+        <form hx-post="/api/login" hx-swap="outerHTML">
+          <label for="username">Username</label>
+          <input
+            class="full-width"
+            type="text"
+            id="username"
+            name="username"
+            required
+          >
+          <br>
+          <label for="password">Password</label>
+          <input
+            class="full-width"
+            type="password"
+            id="password"
+            name="password"
+            required
+          >
+          <br><br>
+          <button type="submit" class="center-horizontally">Login</button>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>

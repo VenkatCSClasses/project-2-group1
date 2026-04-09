@@ -1,16 +1,14 @@
 import { Hono } from "@hono/hono";
 import { secureHeaders } from "@hono/hono/secure-headers";
 import { logger } from "@hono/hono/logger";
-import { trimTrailingSlash } from "@hono/hono/trailing-slash";
 import { showRoutes } from "@hono/hono/dev";
 import { serveStatic } from "@hono/hono/deno";
 import accountRoutes from "./routes/account.ts";
-import { upgradeHTTPS } from "./upgradeHTTPS.ts";
+import { addHeadHTML, upgradeHTTPS } from "./middlewares.ts";
 
 const app = new Hono();
 
 // Various browser security/logging middleware
-app.use(trimTrailingSlash());
 app.use(secureHeaders({
   contentSecurityPolicy: {
     defaultSrc: ["'self'"],
@@ -21,8 +19,22 @@ app.use(logger());
 // Upgrade to HTTPS (unless on localhost)
 app.use(upgradeHTTPS(["0.0.0.0", "127.0.0.1", "localhost"]));
 
+// Very basic template that adds some default <head> tags to all static routes
+app.use(addHeadHTML());
+
 // Static file serving
-app.use("*", serveStatic({ root: "static/" }));
+app.use(
+  "*",
+  serveStatic({
+    root: "static/",
+    rewriteRequestPath: (
+      path,
+    ) =>
+      path.includes(".")
+        ? path
+        : (path.endsWith("/") ? `${path}index.html` : `${path}.html`),
+  }),
+);
 
 // All routes go here =============================================
 

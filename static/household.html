@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Household Route</title>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Test House Dashboard</h1>
+        <button type="button" onclick="window.location.href='/'">Back to Main Route</button>
+      </header>
+
+      <section class="content">
+        <article class="household-card" aria-label="Household placeholder">
+          <h2>The Test House</h2>
+          <section aria-label="Household overview">
+            <h3>Household Overview</h3>
+            <dl class="meta-row">
+              <dt>Group ID:</dt>
+              <dd>1</dd>
+
+              <dt>Created:</dt>
+              <dd><time datetime="2026-04-08T12:00:00.000Z">April 8, 2026</time></dd>
+
+              <dt>Updated:</dt>
+              <dd><time datetime="2026-04-08T12:00:00.000Z">April 8, 2026</time></dd>
+
+              <dt>Member Count:</dt>
+              <dd>4</dd>
+            </dl>
+          </section>
+
+          <section class="members" aria-label="Household members">
+            <h3>Household Members</h3>
+            <p>Current residents with role assignments.</p>
+            <ul id="members-output">
+              <li>Loading members...</li>
+            </ul>
+          </section>
+
+          <section class="accounts" aria-label="Account placeholders">
+            <h3>Streaming Service Accounts</h3>
+            <form id="accounts-form" class="accounts-form" aria-label="Add streaming account">
+              <label for="service-name">Service</label>
+              <input id="service-name" name="serviceName" type="text" placeholder="Netflix" required autocomplete="organization">
+
+              <label for="account-identifier">Email Address</label>
+              <input id="account-identifier" name="accountIdentifier" type="email" placeholder="account@domain.com" required autocomplete="email">
+
+              <label for="account-password">Password</label>
+              <input id="account-password" name="accountPassword" type="text" placeholder="Password" required autocomplete="current-password">
+
+              <button type="submit">Add account</button>
+            </form>
+
+            <p id="account-status" class="status" role="status" aria-live="polite"></p>
+
+            <div id="accounts-output">Loading accounts...</div>
+          </section>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const accountsOutput = document.getElementById("accounts-output");
+      const accountsForm = document.getElementById("accounts-form");
+      const statusEl = document.getElementById("account-status");
+      const membersOutput = document.getElementById("members-output");
+
+      function escapeHtml(value) {
+        return value
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function renderAccounts(accounts) {
+        if (!accounts.length) {
+          accountsOutput.innerHTML = "<p>No streaming accounts have been added yet.</p>";
+          return;
+        }
+
+        const rows = accounts.map((account) => {
+          return `
+            <tr>
+              <td>${escapeHtml(account.service_name)}</td>
+              <td>${escapeHtml(account.account_identifier)}</td>
+              <td><span class="password">${escapeHtml(account.password)}</span></td>
+            </tr>
+          `;
+        }).join("");
+
+        accountsOutput.innerHTML = `
+          <table class="account-table" aria-label="Stored streaming accounts">
+            <thead>
+              <tr>
+                <th>Service</th>
+                <th>Email Address</th>
+                <th>Password</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        `;
+      }
+
+      function isEmailAddress(value) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+      }
+
+      async function loadAccounts() {
+        try {
+          const response = await fetch("/api/household/accounts");
+
+          if (!response.ok) {
+            throw new Error("Failed to load account data");
+          }
+
+          const payload = await response.json();
+          renderAccounts(Array.isArray(payload.data) ? payload.data : []);
+        } catch (_error) {
+          accountsOutput.textContent = "Unable to load accounts right now.";
+        }
+      }
+
+      function renderMembers(members) {
+        if (!members.length) {
+          membersOutput.innerHTML = "<li>No members have been added yet.</li>";
+          return;
+        }
+
+        membersOutput.innerHTML = members
+          .map((member) => {
+            return `<li><strong>${escapeHtml(member.name)}</strong> - ${escapeHtml(member.role)}</li>`;
+          })
+          .join("");
+      }
+
+      async function loadMembers() {
+        try {
+          const response = await fetch("/api/household/members");
+
+          if (!response.ok) {
+            throw new Error("Failed to load member data");
+          }
+
+          const payload = await response.json();
+          renderMembers(Array.isArray(payload.data) ? payload.data : []);
+        } catch (_error) {
+          membersOutput.innerHTML = "<li>Unable to load members right now.</li>";
+        }
+      }
+
+      accountsForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(accountsForm);
+        const body = {
+          service_name: String(formData.get("serviceName") || "").trim(),
+          account_identifier: String(formData.get("accountIdentifier") || "").trim(),
+          password: String(formData.get("accountPassword") || "").trim(),
+        };
+
+        if (!body.service_name || !body.account_identifier || !body.password) {
+          statusEl.textContent = "All fields are required.";
+          return;
+        }
+
+        if (!isEmailAddress(body.account_identifier)) {
+          statusEl.textContent = "Account must be a valid email address.";
+          return;
+        }
+
+        statusEl.textContent = "Saving account...";
+
+        try {
+          const response = await fetch("/api/household/accounts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to save account");
+          }
+
+          statusEl.textContent = "Account saved.";
+          accountsForm.reset();
+          await loadAccounts();
+        } catch (_error) {
+          statusEl.textContent = "Could not save account. Try again.";
+        }
+      });
+
+      void loadMembers();
+      void loadAccounts();
+    </script>
+  </body>
+</html>

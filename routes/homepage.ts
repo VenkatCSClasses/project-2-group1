@@ -13,4 +13,22 @@ app.get("/", (c) => {
   );
 });
 
+app.get("/manager-households", (c) => {
+  // dummy data
+  return c.html(
+    html`
+        <p>Test Manager</p>
+    `,
+  )
+});
+
+app.get("/member-households", (c) => {
+  // dummy data
+  return c.html(
+    html`
+      <p>Test Member</p>
+    `,
+  )
+});
+
 export default app;

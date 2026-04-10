@@ -3,6 +3,9 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="/selfcsp/htmx.2.0.8.min.js" defer></script>
+        <link rel="stylesheet" href="/selfcsp/98.css" />
+        <link rel="stylesheet" href="/selfcsp/style_default.css" />
         <title>Home Page</title>
     </head>
     <body>
@@ -13,15 +16,32 @@
             </header>
             <section class="add_households">
                 <h2>Add Households</h2>
-                <!--Create household with text box and checkmark, join household with numerical input for household code-->
+                <section class="create_household" aria-label="Create Household Form"></section>
+                    <h3>Create New Household</h3>
+                    <form>
+                        <label for="household_name" aria-label="Household Name">Create Household:</label>
+                        <input type="text" id="name" placeholder="Household Name" aria-placeholder="Input Household Name Here" >
+                        <button type="submit" name="submit">Submit</button>
+                    </form>
+                </section>
+                    <h3>Join Household</h3>
+                <section class="join_household" aria-label="Join Household Form"></section>
+                    <form>
+                        <label for="household_name">Join Household Via Code:</label>
+                        <input type="text" id="name" placeholder="Household Join Code" aria-placeholder="Input Household Join Code Here">
+                        <button type="submit" name="submit">Submit</button>
+                    </form>
+                </section>
             </section>
             <section class="current_households">
                 <h2>Current Households</h2>
                 <section class="manager_households">
                     <h3>Manager Households</h3>
+                    <div hx-get="/api/homepage/manager-households" hx-trigger="load" hx-swap="outerHTML"></div>
                 </section>
                 <section class="member_households">
                     <h3>Member Households</h3>
+                    <div hx-get="/api/homepage/member-households" hx-trigger="load" hx-swap="outerHTML"></div>
                 </section>
             </section>
         </main>

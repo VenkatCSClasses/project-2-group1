@@ -15,7 +15,8 @@
   },
   "deploy": {
     "org": "comp345spr26team1",
-    "app": "project-2-group1"
+    "app": "project-2-group1",
+    "install": "deno install"
   },
   "compilerOptions": {
     "jsx": "precompile",

@@ -20,5 +20,5 @@ const migrationConfig: Knex.MigratorConfig = {
 export const db = knex(config);
 
 export async function runMigrations() {
-    await db.migrate.latest(migrationConfig)
+  await db.migrate.latest(migrationConfig);
 }

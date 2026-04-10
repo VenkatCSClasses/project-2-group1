@@ -10,13 +10,17 @@
   },
   "tasks": {
     "start": "deno run --watch --allow-net --allow-read=. main.ts",
-    "check": "deno test tests/*.ts",
+    "check": "deno fmt **/*.ts && deno test tests/*.ts",
     "migrate": "deno run --allow-net --allow-env --allow-read --allow-write migrate.ts"
   },
   "deploy": {
     "org": "comp345spr26team1",
     "app": "project-2-group1",
-    "install": "deno install"
+    "install": "deno install",
+    "build": "deno task check",
+    "runtime": {
+      "entrypoint": "main.ts"
+    }
   },
   "compilerOptions": {
     "jsx": "precompile",

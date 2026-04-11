@@ -5,6 +5,10 @@ import { showRoutes } from "@hono/hono/dev";
 import { serveStatic } from "@hono/hono/deno";
 import accountRoutes from "./routes/account.ts";
 import { addHeadHTML, upgradeHTTPS } from "./middlewares.ts";
+import { runMigrations } from "./database/knex.ts";
+
+// Run db migrations if not already applied
+await runMigrations();
 
 const app = new Hono();
 

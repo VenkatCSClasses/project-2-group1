@@ -13,20 +13,52 @@ app.get("/", (c) => {
   );
 });
 
-app.get("/manager-households", (c) => {
-  // dummy data
+// Route to return manager household information
+app.get("/manager-households", async (c) => {
+  let managerHTML: string = "";
   return c.html(
     html`
-        <p>Test Manager</p>
+        <p>${managerHTML}</p>
     `,
   )
 });
 
-app.get("/member-households", (c) => {
-  // dummy data
+// Route to return member household information
+app.get("/member-households", async (c) => {
+  let memberHTML: string = "";
   return c.html(
     html`
-      <p>Test Member</p>
+        <p>${memberHTML}</p>
+    `,
+  )
+});
+
+// Route to join a household
+app.post("/join-household", async (c) => {
+  let joinHTML: string = "";
+  return c.html(
+    html`
+        <p>${joinHTML}</p>
+    `,
+  )
+});
+
+// Route to create a household
+app.post("/create-household", async (c) => {
+  let createHTML: string = "";
+  return c.html(
+    html`
+        <p>${createHTML}</p>
+    `,
+  )
+});
+
+// Route to attempt to leave a household
+app.post("/leave-household", async (c) => {
+  let leaveHTML: string = "";
+  return c.html(
+    html`
+        <p>${leaveHTML}</p>
     `,
   )
 });

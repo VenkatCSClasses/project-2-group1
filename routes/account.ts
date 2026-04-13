@@ -3,6 +3,7 @@ import { html } from "@hono/hono/html";
 import { db } from "../database/knex.ts";
 import { Result } from "pg";
 import { Buffer } from "node:buffer";
+import { generateAccountSecrets, importPublicKey, unlockKey } from "../cryptography.ts";
 
 const app = new Hono();
 
@@ -16,131 +17,18 @@ app.get("/", (c) => {
   );
 });
 
-// Some helper fns from mozilla examples converted to typescript
-async function getRandomSalt(): Promise<Uint8Array> {
-  return await crypto.getRandomValues(new Uint8Array(128));
-}
-
-async function exportRSAKeyPair(
-  keyPair: CryptoKeyPair,
-): Promise<{ public: Uint8Array; private: Uint8Array }> {
-  const publicKeyBuffer = await crypto.subtle.exportKey(
-    "spki",
-    keyPair.publicKey,
-  );
-  console.log("Public Key (SPKI) as ArrayBuffer:", publicKeyBuffer);
-
-  const privateKeyBuffer = await crypto.subtle.exportKey(
-    "pkcs8",
-    keyPair.privateKey,
-  );
-
-  return {
-    public: new Uint8Array(publicKeyBuffer),
-    private: new Uint8Array(privateKeyBuffer),
-  };
-}
-
-async function generateRSAKeyPair(): Promise<CryptoKeyPair> {
-  return await crypto.subtle.generateKey(
-    {
-      name: "RSA-OAEP",
-      modulusLength: 2048, // or 4096
-      publicExponent: new Uint8Array([1, 0, 1]),
-      hash: "SHA-256",
-    },
-    true, // extractable
-    ["encrypt", "decrypt"], // key usages
-  );
-}
-
-async function importPublicKey(
-  publicKeyBuffer: BufferSource,
-): Promise<CryptoKey> {
-  return await crypto.subtle.importKey(
-    "spki",
-    publicKeyBuffer, // The exported public key byte array
-    {
-      name: "RSA-OAEP",
-      hash: "SHA-256",
-    },
-    true, // Whether the key is extractable (i.e., can be exported again)
-    ["encrypt"], // Key usages
-  );
-}
-
-async function importPrivateKey(
-  privateKeyBuffer: BufferSource,
-): Promise<CryptoKey> {
-  return await crypto.subtle.importKey(
-    "pkcs8",
-    privateKeyBuffer, // The exported private key byte array
-    {
-      name: "RSA-OAEP",
-      hash: "SHA-256",
-    },
-    true, // Whether the key is extractable (i.e., can be exported again)
-    ["decrypt"], // Key usages
-  );
-}
-
-async function getSymmKeyFromPassword(
-  password: string,
-  salt: BufferSource,
-): Promise<CryptoKey> {
-  const enc = new TextEncoder();
-
-  // Get a key from the password
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(password),
-    { name: "PBKDF2" },
-    false,
-    ["deriveBits", "deriveKey"],
-  );
-
-  // Derive a stronger key by adding the salt
-  return await crypto.subtle.deriveKey(
-    {
-      "name": "PBKDF2",
-      salt: salt,
-      "iterations": 100000,
-      "hash": "SHA-256",
-    },
-    keyMaterial,
-    { "name": "AES-GCM", "length": 256 },
-    true,
-    ["encrypt", "decrypt"],
-  );
-}
-
-app.post("/signup", async (c) => {
+app.put("/signup", async (c) => {
   const parsedBody = await c.req.parseBody();
 
   const username: string = parsedBody.username as string;
   const password: string = parsedBody.password as string;
 
-  const salt = await getRandomSalt();
-  const derivedKey = await getSymmKeyFromPassword(password, Buffer.from(salt));
-
-  const keyPair = await generateRSAKeyPair();
-  const exportedKeys = await exportRSAKeyPair(keyPair);
-
-  const encryptedPrivateKeyBuffer = await crypto.subtle.encrypt(
-    {
-      name: "AES-GCM",
-      iv: salt.slice(0, 12),
-    },
-    derivedKey,
-    Buffer.from(exportedKeys.private),
-  );
+  const secrets = await generateAccountSecrets(password);
 
   try {
     const insertResult: { rowCount: number } = await db.insert({
       username,
-      public_key: exportedKeys.public,
-      password_salt: salt,
-      encrypted_private_key: new Uint8Array(encryptedPrivateKeyBuffer),
+      ...secrets
     }).into("user_account");
 
     console.log(insertResult);
@@ -252,20 +140,10 @@ app.post("/login", async (c) => {
   );
 
   try {
-    const derivedKey = await getSymmKeyFromPassword(
+    const privateKey = await unlockKey(
       password,
-      Buffer.from(passwordSalt),
-    );
-
-    const privateKey = await importPrivateKey(
-      await crypto.subtle.decrypt(
-        {
-          name: "AES-GCM",
-          iv: Buffer.from(passwordSalt.slice(0, 12)),
-        },
-        derivedKey,
-        Buffer.from(encryptedPrivateKey),
-      ),
+      passwordSalt,
+      encryptedPrivateKey
     );
 
     return c.html(html`

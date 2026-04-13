@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- INSERT_HEAD_HTML -->
+    <title>SubSeer - Create Account</title>
+  </head>
+  <body>
+    <div class="window">
+      <div class="title-bar">
+        <div class="title-bar-text">
+          Sign up
+        </div>
+      </div>
+      <div class="window-body">
+        <form
+          class="login-form"
+          hx-post="/api/account/signup"
+          hx-swap="outerHTML"
+        >
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" required>
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required>
+          <button type="submit">Create Account</button>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>

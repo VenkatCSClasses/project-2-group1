@@ -21,6 +21,69 @@ async function getRandomSalt(): Promise<Uint8Array> {
   return await crypto.getRandomValues(new Uint8Array(128));
 }
 
+async function exportRSAKeyPair(
+  keyPair: CryptoKeyPair,
+): Promise<{ public: Uint8Array; private: Uint8Array }> {
+  const publicKeyBuffer = await crypto.subtle.exportKey(
+    "spki",
+    keyPair.publicKey,
+  );
+  console.log("Public Key (SPKI) as ArrayBuffer:", publicKeyBuffer);
+
+  const privateKeyBuffer = await crypto.subtle.exportKey(
+    "pkcs8",
+    keyPair.privateKey,
+  );
+
+  return {
+    public: new Uint8Array(publicKeyBuffer),
+    private: new Uint8Array(privateKeyBuffer),
+  };
+}
+
+async function generateRSAKeyPair(): Promise<CryptoKeyPair> {
+  return await crypto.subtle.generateKey(
+    {
+      name: "RSA-OAEP",
+      modulusLength: 2048, // or 4096
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: "SHA-256",
+    },
+    true, // extractable
+    ["encrypt", "decrypt"], // key usages
+  );
+}
+
+async function importPublicKey(
+  publicKeyBuffer: BufferSource,
+): Promise<CryptoKey> {
+  return await crypto.subtle.importKey(
+    "spki",
+    publicKeyBuffer, // The exported public key byte array
+    {
+      name: "RSA-OAEP",
+      hash: "SHA-256",
+    },
+    true, // Whether the key is extractable (i.e., can be exported again)
+    ["encrypt"], // Key usages
+  );
+}
+
+async function importPrivateKey(
+  privateKeyBuffer: BufferSource,
+): Promise<CryptoKey> {
+  return await crypto.subtle.importKey(
+    "pkcs8",
+    privateKeyBuffer, // The exported private key byte array
+    {
+      name: "RSA-OAEP",
+      hash: "SHA-256",
+    },
+    true, // Whether the key is extractable (i.e., can be exported again)
+    ["decrypt"], // Key usages
+  );
+}
+
 async function getSymmKeyFromPassword(
   password: string,
   salt: BufferSource,
@@ -50,6 +113,55 @@ async function getSymmKeyFromPassword(
     ["encrypt", "decrypt"],
   );
 }
+
+app.post("/signup", async (c) => {
+  const parsedBody = await c.req.parseBody();
+
+  const username: string = parsedBody.username as string;
+  const password: string = parsedBody.password as string;
+
+  const salt = await getRandomSalt();
+  const derivedKey = await getSymmKeyFromPassword(password, Buffer.from(salt));
+
+  const keyPair = await generateRSAKeyPair();
+  const exportedKeys = await exportRSAKeyPair(keyPair);
+
+  const encryptedPrivateKeyBuffer = await crypto.subtle.encrypt(
+    {
+      name: "AES-GCM",
+      iv: salt.slice(0, 12),
+    },
+    derivedKey,
+    Buffer.from(exportedKeys.private),
+  );
+
+  try {
+    const insertResult: { rowCount: number } = await db.insert({
+      username,
+      public_key: exportedKeys.public,
+      password_salt: salt,
+      encrypted_private_key: new Uint8Array(encryptedPrivateKeyBuffer),
+    }).into("user_account");
+
+    console.log(insertResult);
+
+    if (insertResult.rowCount !== 1) {
+      throw new Error();
+    }
+
+    return c.html(html`
+      <p>Signup success. Please proceed to <a href="/login">login</a>.</p>
+    `);
+  } catch (e) {
+    console.log(e);
+    return c.html(html`
+      <p>
+        Signup failed: username may already be taken. Please try again with a
+        different username.
+      </p>
+    `);
+  }
+});
 
 // "GET" returns the login form
 app.get("/login", async (c) => {
@@ -127,31 +239,43 @@ app.post("/login", async (c) => {
         password_salt: new Uint8Array(),
         password_hash: new Uint8Array(),
         encrypted_private_key: new Uint8Array(),
+        public_key: new Uint8Array(),
       };
 
   console.log(selectResult, `selected user for username=${username}`);
 
   const userId: number = selectResult.user_id;
-  const password_salt: Uint8Array = selectResult.password_salt;
-  const encrypted_private_key: Uint8Array = selectResult.encrypted_private_key;
+  const passwordSalt: Uint8Array = selectResult.password_salt;
+  const encryptedPrivateKey: Uint8Array = selectResult.encrypted_private_key;
+  const publicKey: CryptoKey = await importPublicKey(
+    Buffer.from(selectResult.public_key),
+  );
 
   try {
     const derivedKey = await getSymmKeyFromPassword(
       password,
-      Buffer.from(password_salt),
+      Buffer.from(passwordSalt),
     );
 
-    const privateKey = await crypto.subtle.decrypt(
-      {
-        name: "AES-GCM",
-        iv: Buffer.from(password_salt),
-      },
-      derivedKey,
-      Buffer.from(encrypted_private_key),
+    const privateKey = await importPrivateKey(
+      await crypto.subtle.decrypt(
+        {
+          name: "AES-GCM",
+          iv: Buffer.from(passwordSalt.slice(0, 12)),
+        },
+        derivedKey,
+        Buffer.from(encryptedPrivateKey),
+      ),
     );
 
     return c.html(html`
-      <p>Login success. Your key=the_rsa_private_key</p>
+      <p>
+        Login success.
+        <br>
+        Your id: ${userId}
+        <br>
+        Your key pair: ${publicKey.type}, ${privateKey.type}
+      </p>
     `);
   } catch (e) {
     console.log(e);

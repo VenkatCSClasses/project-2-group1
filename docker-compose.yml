@@ -1,0 +1,17 @@
+services:
+  p2g1-postgres:
+    image: "postgres:18"
+
+    ports:
+      - 5432:5432
+
+    environment:
+      POSTGRES_USER: subseer
+      POSTGRES_PASSWORD: subseer
+      POSTGRES_DB: subseer
+
+    volumes:
+      - p2g1-postgres-data:/var/lib/postgresql/
+
+volumes:
+  p2g1-postgres-data:

@@ -1,338 +1,487 @@
 import { Hono } from "@hono/hono";
+import { db } from "../database/knex.ts";
 
 type Household = {
-	group_id: number;
-	group_name: string;
-	created_at: string;
-	updated_at: string;
-	group_code_salt: string;
-	group_code_hash: string;
+  household_id: number;
+  household_name: string;
+  join_code: number;
+  created_at: string;
+  updated_at: string;
 };
 
 type CreateHouseholdInput = {
-	group_name: string;
-	group_code_salt: string;
-	group_code_hash: string;
+  household_name: string;
+  join_code?: number;
 };
 
 type UpdateHouseholdInput = Partial<CreateHouseholdInput>;
 
 type StreamingAccount = {
-	account_id: number;
-	service_name: string;
-	account_identifier: string;
-	password: string;
-	created_at: string;
-	updated_at: string;
+  account_id: number;
+  household_id: number;
+  service_name: string;
+  account_identifier: string;
+  password: string;
+  created_at: string;
+  updated_at: string;
 };
 
 type CreateStreamingAccountInput = {
-	service_name: string;
-	account_identifier: string;
-	password: string;
+  household_id: number;
+  service_name: string;
+  account_identifier: string;
+  password: string;
 };
 
 type HouseholdMember = {
-	member_id: number;
-	name: string;
-	role: string;
-	created_at: string;
-	updated_at: string;
+  member_id: number;
+  household_id: number;
+  name: string;
+  role: string;
+  created_at: string;
+  updated_at: string;
 };
 
 type CreateHouseholdMemberInput = {
-	name: string;
-	role: string;
+  household_id: number;
+  name: string;
+  role: string;
 };
 
 const app = new Hono();
-
-const households: Household[] = [];
-const householdMembers: HouseholdMember[] = [
-	{
-		member_id: 1,
-		name: "Avery",
-		role: "Manager",
-		created_at: "2026-04-08T12:00:00.000Z",
-		updated_at: "2026-04-08T12:00:00.000Z",
-	},
-	{
-		member_id: 2,
-		name: "Jordan",
-		role: "Manager",
-		created_at: "2026-04-08T12:00:00.000Z",
-		updated_at: "2026-04-08T12:00:00.000Z",
-	},
-	{
-		member_id: 3,
-		name: "Kai",
-		role: "Member",
-		created_at: "2026-04-08T12:00:00.000Z",
-		updated_at: "2026-04-08T12:00:00.000Z",
-	},
-	{
-		member_id: 4,
-		name: "Riley",
-		role: "Member",
-		created_at: "2026-04-08T12:00:00.000Z",
-		updated_at: "2026-04-08T12:00:00.000Z",
-	},
-];
-const streamingAccounts: StreamingAccount[] = [
-	{
-		account_id: 1,
-		service_name: "Netflix",
-		account_identifier: "netflix@testhouse.com",
-		password: "TestHouseNetflix!26",
-		created_at: "2026-04-08T12:00:00.000Z",
-		updated_at: "2026-04-08T12:00:00.000Z",
-	},
-	{
-		account_id: 2,
-		service_name: "Spotify",
-		account_identifier: "spotify@testhouse.com",
-		password: "TestHouseSpotify!14",
-		created_at: "2026-04-08T12:00:00.000Z",
-		updated_at: "2026-04-08T12:00:00.000Z",
-	},
-	{
-		account_id: 3,
-		service_name: "Disney+",
-		account_identifier: "disney@testhouse.com",
-		password: "TestHouseDisney$88",
-		created_at: "2026-04-08T12:00:00.000Z",
-		updated_at: "2026-04-08T12:00:00.000Z",
-	},
-	{
-		account_id: 4,
-		service_name: "Hulu",
-		account_identifier: "hulu@testhouse.com",
-		password: "TestHouseHulu!7",
-		created_at: "2026-04-08T12:00:00.000Z",
-		updated_at: "2026-04-08T12:00:00.000Z",
-	},
-];
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function now() {
-	return new Date().toISOString();
+function parseOptionalHouseholdId(value: string | null) {
+  if (value === null) {
+    return null;
+  }
+
+  const householdId = Number(value);
+  if (!Number.isInteger(householdId)) {
+    return null;
+  }
+
+  return householdId;
 }
 
-function nextGroupId() {
-	return households.reduce((maxId, household) => {
-		return Math.max(maxId, household.group_id);
-	}, 0) + 1;
+function makeJoinCode() {
+  return Math.floor(100000 + Math.random() * 900000);
 }
 
-function findHousehold(groupId: number) {
-	return households.find((household) => household.group_id === groupId);
+function mapHousehold(row: {
+  household_id: number;
+  household_name: string;
+  join_code: number;
+  created_at: string | Date;
+  updated_at: string | Date;
+}): Household {
+  return {
+    household_id: row.household_id,
+    household_name: row.household_name,
+    join_code: row.join_code,
+    created_at: String(row.created_at),
+    updated_at: String(row.updated_at),
+  };
 }
 
-function nextAccountId() {
-	return streamingAccounts.reduce((maxId, account) => {
-		return Math.max(maxId, account.account_id);
-	}, 0) + 1;
-}
+app.get("/members", async (c) => {
+  const householdId = parseOptionalHouseholdId(c.req.query("household_id") ?? null);
+  const query = db("household_membership as hm")
+    .join("user_account as ua", "ua.user_id", "hm.user_id")
+    .select(
+      "ua.user_id as member_id",
+      "hm.household_id",
+      "ua.username as name",
+      "hm.role",
+      "hm.created_at",
+      "hm.updated_at",
+    )
+    .orderBy("ua.user_id", "asc");
 
-function nextMemberId() {
-	return householdMembers.reduce((maxId, member) => {
-		return Math.max(maxId, member.member_id);
-	}, 0) + 1;
-}
+  if (householdId !== null) {
+    query.where("hm.household_id", householdId);
+  }
 
-app.get("/members", (c) => {
-	return c.json({
-		resource: "household_members",
-		fields: {
-			member_id: "integer primary key",
-			name: "string",
-			role: "string",
-			created_at: "timestamp",
-			updated_at: "timestamp",
-		},
-		data: householdMembers,
-	});
+  const rows = await query;
+  const data: HouseholdMember[] = rows.map((row) => ({
+    member_id: row.member_id,
+    household_id: row.household_id,
+    name: row.name,
+    role: row.role,
+    created_at: String(row.created_at),
+    updated_at: String(row.updated_at),
+  }));
+
+  return c.json({ resource: "household_members", data });
 });
 
 app.post("/members", async (c) => {
-	const body = (await c.req.json()) as Partial<CreateHouseholdMemberInput>;
+  const body = (await c.req.json()) as Partial<CreateHouseholdMemberInput>;
 
-	if (!body.name || !body.role) {
-		return c.json({ error: "name and role are required" }, 400);
-	}
+  if (!body.household_id || !body.name || !body.role) {
+    return c.json({ error: "household_id, name, and role are required" }, 400);
+  }
 
-	const createdAt = now();
-	const newMember: HouseholdMember = {
-		member_id: nextMemberId(),
-		name: body.name,
-		role: body.role,
-		created_at: createdAt,
-		updated_at: createdAt,
-	};
+  const household = await db("household")
+    .select("household_id")
+    .where({ household_id: body.household_id })
+    .first();
 
-	householdMembers.push(newMember);
+  if (!household) {
+    return c.json({ error: "Household not found" }, 404);
+  }
 
-	return c.json(newMember, 201);
+  const [createdUser] = await db("user_account")
+    .insert({
+      username: body.name,
+      public_key: encoder.encode("subseer-public-key"),
+      password_salt: encoder.encode("subseer-salt"),
+      password_hash: encoder.encode("subseer-hash"),
+    })
+    .returning(["user_id"]);
+
+  const [createdMembership] = await db("household_membership")
+    .insert({
+      user_id: createdUser.user_id,
+      household_id: body.household_id,
+      role: body.role,
+    })
+    .returning(["created_at", "updated_at", "household_id", "role"]);
+
+  const newMember: HouseholdMember = {
+    member_id: createdUser.user_id,
+    household_id: createdMembership.household_id,
+    name: body.name,
+    role: createdMembership.role,
+    created_at: String(createdMembership.created_at),
+    updated_at: String(createdMembership.updated_at),
+  };
+
+  return c.json(newMember, 201);
 });
 
-app.get("/accounts", (c) => {
-	return c.json({
-		resource: "household_streaming_accounts",
-		fields: {
-			account_id: "integer primary key",
-			service_name: "string",
-			account_identifier: "string",
-			password: "string",
-			created_at: "timestamp",
-			updated_at: "timestamp",
-		},
-		data: streamingAccounts,
-	});
+app.delete("/members/:memberId", async (c) => {
+  const memberId = Number(c.req.param("memberId"));
+  const householdId = parseOptionalHouseholdId(c.req.query("household_id") ?? null);
+
+  if (!Number.isInteger(memberId)) {
+    return c.json({ error: "memberId must be a valid integer" }, 400);
+  }
+
+  if (householdId === null) {
+    return c.json({ error: "household_id query parameter is required" }, 400);
+  }
+
+  const existingMember = await db("household_membership as hm")
+    .join("user_account as ua", "ua.user_id", "hm.user_id")
+    .select(
+      "ua.user_id as member_id",
+      "hm.household_id",
+      "ua.username as name",
+      "hm.role",
+      "hm.created_at",
+      "hm.updated_at",
+    )
+    .where({
+      "hm.user_id": memberId,
+      "hm.household_id": householdId,
+    })
+    .first();
+
+  if (!existingMember) {
+    return c.json({ error: "Member not found" }, 404);
+  }
+
+  await db("household_membership")
+    .where({ user_id: memberId, household_id: householdId })
+    .del();
+
+  const hasOtherMemberships = await db("household_membership")
+    .select("user_id")
+    .where({ user_id: memberId })
+    .first();
+
+  if (!hasOtherMemberships) {
+    await db("user_account").where({ user_id: memberId }).del();
+  }
+
+  return c.json({
+    deleted: {
+      member_id: existingMember.member_id,
+      household_id: existingMember.household_id,
+      name: existingMember.name,
+      role: existingMember.role,
+      created_at: String(existingMember.created_at),
+      updated_at: String(existingMember.updated_at),
+    },
+  });
+});
+
+app.get("/accounts", async (c) => {
+  const householdId = parseOptionalHouseholdId(c.req.query("household_id") ?? null);
+  const query = db("shared_vault_password")
+    .select(
+      "shared_vault_password.item_id as account_id",
+      "shared_vault_password.group_id as household_id",
+      "shared_vault_password.service_name",
+      "shared_vault_password.service_username as account_identifier",
+      db.raw(`(
+        SELECT encrypted_service_password
+        FROM user_vault_access
+        WHERE user_vault_access.item_id = shared_vault_password.item_id
+        ORDER BY user_id ASC
+        LIMIT 1
+      ) as service_password`),
+      "shared_vault_password.created_at",
+      "shared_vault_password.updated_at",
+    )
+    .orderBy("item_id", "asc");
+
+  if (householdId !== null) {
+    query.where("group_id", householdId);
+  }
+
+  const rows = await query;
+  const data: StreamingAccount[] = rows.map((row) => ({
+    account_id: row.account_id,
+    household_id: row.household_id,
+    service_name: row.service_name,
+    account_identifier: row.account_identifier ?? "",
+    password: row.service_password ? decoder.decode(row.service_password) : "",
+    created_at: String(row.created_at),
+    updated_at: String(row.updated_at),
+  }));
+
+  return c.json({ resource: "shared_vault_passwords", data });
 });
 
 app.post("/accounts", async (c) => {
-	const body = (await c.req.json()) as Partial<CreateStreamingAccountInput>;
+  const body = (await c.req.json()) as Partial<CreateStreamingAccountInput>;
 
-	if (!body.service_name || !body.account_identifier || !body.password) {
-		return c.json(
-			{
-				error:
-					"service_name, account_identifier, and password are required",
-			},
-			400,
-		);
-	}
+  if (!body.household_id || !body.service_name || !body.account_identifier || !body.password) {
+    return c.json(
+      {
+        error: "household_id, service_name, account_identifier, and password are required",
+      },
+      400,
+    );
+  }
 
-	if (!emailPattern.test(body.account_identifier)) {
-		return c.json({ error: "account_identifier must be a valid email address" }, 400);
-	}
+  if (!emailPattern.test(body.account_identifier)) {
+    return c.json(
+      { error: "account_identifier must be a valid email address" },
+      400,
+    );
+  }
 
-	const createdAt = now();
-	const newAccount: StreamingAccount = {
-		account_id: nextAccountId(),
-		service_name: body.service_name,
-		account_identifier: body.account_identifier,
-		password: body.password,
-		created_at: createdAt,
-		updated_at: createdAt,
-	};
+  const household = await db("household")
+    .select("household_id")
+    .where({ household_id: body.household_id })
+    .first();
 
-	streamingAccounts.push(newAccount);
+  if (!household) {
+    return c.json({ error: "Household not found" }, 404);
+  }
 
-	return c.json(newAccount, 201);
+  const [created] = await db("shared_vault_password")
+    .insert({
+      group_id: body.household_id,
+      service_name: body.service_name,
+      service_username: body.account_identifier,
+    })
+    .returning([
+      "item_id as account_id",
+      "group_id as household_id",
+      "service_name",
+      "service_username as account_identifier",
+      "created_at",
+      "updated_at",
+    ]);
+
+  const members = await db("household_membership")
+    .select("user_id")
+    .where({ household_id: body.household_id });
+
+  if (members.length === 0) {
+    await db("shared_vault_password").where({ item_id: created.account_id }).del();
+    return c.json(
+      { error: "Household must have at least one member before adding accounts" },
+      400,
+    );
+  }
+
+  await db("user_vault_access").insert(
+    members.map((member) => ({
+      user_id: member.user_id,
+      item_id: created.account_id,
+      encrypted_service_password: encoder.encode(body.password as string),
+    })),
+  );
+
+  const newAccount: StreamingAccount = {
+    account_id: created.account_id,
+    household_id: created.household_id,
+    service_name: created.service_name,
+    account_identifier: created.account_identifier,
+    password: body.password,
+    created_at: String(created.created_at),
+    updated_at: String(created.updated_at),
+  };
+
+  return c.json(newAccount, 201);
 });
 
-app.get("/", (c) => {
-	return c.json({
-		resource: "household",
-		table: "household",
-		fields: {
-			group_id: "integer primary key",
-			group_name: "string",
-			created_at: "timestamp",
-			updated_at: "timestamp",
-			group_code_salt: "binary",
-			group_code_hash: "binary",
-		},
-		data: households,
-	});
+app.delete("/accounts/:accountId", async (c) => {
+  const accountId = Number(c.req.param("accountId"));
+
+  if (!Number.isInteger(accountId)) {
+    return c.json({ error: "accountId must be a valid integer" }, 400);
+  }
+
+  const [deletedAccount] = await db("shared_vault_password")
+    .where({ item_id: accountId })
+    .del()
+    .returning([
+      "item_id as account_id",
+      "group_id as household_id",
+      "service_name",
+      "service_username as account_identifier",
+      "created_at",
+      "updated_at",
+    ]);
+
+  if (!deletedAccount) {
+    return c.json({ error: "Account not found" }, 404);
+  }
+
+  return c.json({
+    deleted: {
+      account_id: deletedAccount.account_id,
+      household_id: deletedAccount.household_id,
+      service_name: deletedAccount.service_name,
+      account_identifier: deletedAccount.account_identifier ?? "",
+      password: "",
+      created_at: String(deletedAccount.created_at),
+      updated_at: String(deletedAccount.updated_at),
+    },
+  });
 });
 
-app.get("/:groupId", (c) => {
-	const groupId = Number(c.req.param("groupId"));
+app.get("/", async (c) => {
+  const rows = await db("household")
+    .select("household_id", "household_name", "join_code", "created_at", "updated_at")
+    .orderBy("household_id", "asc");
 
-	if (!Number.isInteger(groupId)) {
-		return c.json({ error: "groupId must be a valid integer" }, 400);
-	}
+  const data = rows.map(mapHousehold);
 
-	const household = findHousehold(groupId);
+  return c.json({
+    resource: "household",
+    table: "household",
+    data,
+  });
+});
 
-	if (!household) {
-		return c.json({ error: "Household not found" }, 404);
-	}
+app.get("/:householdId", async (c) => {
+  const householdId = Number(c.req.param("householdId"));
 
-	return c.json(household);
+  if (!Number.isInteger(householdId)) {
+    return c.json({ error: "householdId must be a valid integer" }, 400);
+  }
+
+  const row = await db("household")
+    .select("household_id", "household_name", "join_code", "created_at", "updated_at")
+    .where({ household_id: householdId })
+    .first();
+
+  if (!row) {
+    return c.json({ error: "Household not found" }, 404);
+  }
+
+  return c.json(mapHousehold(row));
 });
 
 app.post("/", async (c) => {
-	const body = (await c.req.json()) as Partial<CreateHouseholdInput>;
+  const body = (await c.req.json()) as Partial<CreateHouseholdInput>;
 
-	if (!body.group_name || !body.group_code_salt || !body.group_code_hash) {
-		return c.json(
-			{
-				error:
-					"group_name, group_code_salt, and group_code_hash are required",
-			},
-			400,
-		);
-	}
+  if (!body.household_name) {
+    return c.json({ error: "household_name is required" }, 400);
+  }
 
-	const createdAt = now();
-	const household: Household = {
-		group_id: nextGroupId(),
-		group_name: body.group_name,
-		created_at: createdAt,
-		updated_at: createdAt,
-		group_code_salt: body.group_code_salt,
-		group_code_hash: body.group_code_hash,
-	};
+  const joinCode = Number.isInteger(body.join_code) ? body.join_code : makeJoinCode();
 
-	households.push(household);
+  const [created] = await db("household")
+    .insert({ household_name: body.household_name, join_code: joinCode })
+    .returning(["household_id", "household_name", "join_code", "created_at", "updated_at"]);
 
-	return c.json(household, 201);
+  const household = mapHousehold(created);
+
+  return c.json(household, 201);
 });
 
-app.patch("/:groupId", async (c) => {
-	const groupId = Number(c.req.param("groupId"));
+app.patch("/:householdId", async (c) => {
+  const householdId = Number(c.req.param("householdId"));
 
-	if (!Number.isInteger(groupId)) {
-		return c.json({ error: "groupId must be a valid integer" }, 400);
-	}
+  if (!Number.isInteger(householdId)) {
+    return c.json({ error: "householdId must be a valid integer" }, 400);
+  }
 
-	const household = findHousehold(groupId);
+  const existing = await db("household")
+    .select("household_id")
+    .where({ household_id: householdId })
+    .first();
 
-	if (!household) {
-		return c.json({ error: "Household not found" }, 404);
-	}
+  if (!existing) {
+    return c.json({ error: "Household not found" }, 404);
+  }
 
-	const body = (await c.req.json()) as UpdateHouseholdInput;
+  const body = (await c.req.json()) as UpdateHouseholdInput;
+  const updates: { household_name?: string; join_code?: number } = {};
 
-	if (body.group_name !== undefined) {
-		household.group_name = body.group_name;
-	}
+  if (body.household_name !== undefined) {
+    updates.household_name = body.household_name;
+  }
 
-	if (body.group_code_salt !== undefined) {
-		household.group_code_salt = body.group_code_salt;
-	}
+  if (body.join_code !== undefined) {
+    if (!Number.isInteger(body.join_code)) {
+      return c.json({ error: "join_code must be a valid integer" }, 400);
+    }
+    updates.join_code = body.join_code;
+  }
 
-	if (body.group_code_hash !== undefined) {
-		household.group_code_hash = body.group_code_hash;
-	}
+  if (Object.keys(updates).length === 0) {
+    return c.json({ error: "No updatable fields provided" }, 400);
+  }
 
-	household.updated_at = now();
+  const [updated] = await db("household")
+    .update(updates)
+    .where({ household_id: householdId })
+    .returning(["household_id", "household_name", "join_code", "created_at", "updated_at"]);
 
-	return c.json(household);
+  const household = mapHousehold(updated);
+
+  return c.json(household);
 });
 
-app.delete("/:groupId", (c) => {
-	const groupId = Number(c.req.param("groupId"));
+app.delete("/:householdId", async (c) => {
+  const householdId = Number(c.req.param("householdId"));
 
-	if (!Number.isInteger(groupId)) {
-		return c.json({ error: "groupId must be a valid integer" }, 400);
-	}
+  if (!Number.isInteger(householdId)) {
+    return c.json({ error: "householdId must be a valid integer" }, 400);
+  }
 
-	const householdIndex = households.findIndex((household) => {
-		return household.group_id === groupId;
-	});
+  const [deletedHousehold] = await db("household")
+    .where({ household_id: householdId })
+    .del()
+    .returning(["household_id", "household_name", "join_code", "created_at", "updated_at"]);
 
-	if (householdIndex < 0) {
-		return c.json({ error: "Household not found" }, 404);
-	}
+  if (!deletedHousehold) {
+    return c.json({ error: "Household not found" }, 404);
+  }
 
-	const [deletedHousehold] = households.splice(householdIndex, 1);
-
-	return c.json({ deleted: deletedHousehold });
+  return c.json({ deleted: mapHousehold(deletedHousehold) });
 });
 
 export default app;

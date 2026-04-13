@@ -6,10 +6,12 @@ import { trimTrailingSlash } from "@hono/hono/trailing-slash";
 import { showRoutes } from "@hono/hono/dev";
 import { serveStatic } from "@hono/hono/deno";
 import accountRoutes from "./routes/account.ts";
-import { runMigrations } from "./database/knex.ts";
+import householdRoutes from "./routes/household.ts";
+import { ensureSampleHousehold, runMigrations } from "./database/knex.ts";
 
 // Run db migrations if not already applied
 await runMigrations();
+await ensureSampleHousehold();
 
 const app = new Hono();
 
@@ -31,4 +33,8 @@ showRoutes(app, {
 });
 
 // Serve the app!
-Deno.serve(app.fetch);
+const hostname = Deno.env.get("HOST") ?? "127.0.0.1";
+const port = Number(Deno.env.get("PORT") ?? "8000");
+
+console.log(`Starting SubSeer on http://${hostname}:${port}`);
+Deno.serve({ hostname, port }, app.fetch);

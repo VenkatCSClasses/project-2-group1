@@ -3,7 +3,11 @@ import { html } from "@hono/hono/html";
 import { db } from "../database/knex.ts";
 import { Result } from "pg";
 import { Buffer } from "node:buffer";
-import { generateAccountSecrets, importPublicKey, unlockKey } from "../cryptography.ts";
+import {
+  generateAccountSecrets,
+  importPublicKey,
+  unlockKey,
+} from "../cryptography.ts";
 
 const app = new Hono();
 
@@ -28,7 +32,7 @@ app.put("/signup", async (c) => {
   try {
     const insertResult: { rowCount: number } = await db.insert({
       username,
-      ...secrets
+      ...secrets,
     }).into("user_account");
 
     console.log(insertResult);
@@ -132,18 +136,18 @@ app.post("/login", async (c) => {
 
   console.log(selectResult, `selected user for username=${username}`);
 
-  const userId: number = selectResult.user_id;
-  const passwordSalt: Uint8Array = selectResult.password_salt;
-  const encryptedPrivateKey: Uint8Array = selectResult.encrypted_private_key;
-  const publicKey: CryptoKey = await importPublicKey(
-    Buffer.from(selectResult.public_key),
-  );
-
   try {
+    const userId: number = selectResult.user_id;
+    const passwordSalt: Uint8Array = selectResult.password_salt;
+    const encryptedPrivateKey: Uint8Array = selectResult.encrypted_private_key;
+    const publicKey: CryptoKey = await importPublicKey(
+      Buffer.from(selectResult.public_key),
+    );
+
     const privateKey = await unlockKey(
       password,
       passwordSalt,
-      encryptedPrivateKey
+      encryptedPrivateKey,
     );
 
     return c.html(html`

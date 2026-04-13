@@ -3,6 +3,7 @@ import { secureHeaders } from "@hono/hono/secure-headers";
 import { logger } from "@hono/hono/logger";
 import { showRoutes } from "@hono/hono/dev";
 import { serveStatic } from "@hono/hono/deno";
+import { trimTrailingSlash } from "@hono/hono/trailing-slash";
 import accountRoutes from "./routes/account.ts";
 import { addHeadHTML, upgradeHTTPS } from "./middlewares.ts";
 import { runMigrations } from "./database/knex.ts";
@@ -18,6 +19,9 @@ app.use(secureHeaders({
     defaultSrc: ["'self'"],
   },
 }));
+
+app.use(trimTrailingSlash());
+
 app.use(logger());
 
 // Upgrade to HTTPS (unless on localhost)
@@ -36,7 +40,7 @@ app.use(
     ) =>
       path.includes(".")
         ? path
-        : (path.endsWith("/") ? `${path}index.html` : `${path}.html`),
+        : (path == "/" ? "/index.html" : `${path}.html`),
   }),
 );
 

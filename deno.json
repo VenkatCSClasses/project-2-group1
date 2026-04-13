@@ -9,7 +9,7 @@
     "pg": "npm:pg@^8.20.0"
   },
   "tasks": {
-    "start": "deno run --watch --allow-net --allow-read=. main.ts",
+    "start": "deno run --watch --allow-net --ignore-env --allow-read=. main.ts",
     "check": "deno fmt **/*.ts && deno test tests/*.ts",
     "migrate": "deno run --allow-net --allow-env --allow-read --allow-write migrate.ts"
   },

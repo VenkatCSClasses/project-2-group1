@@ -3,12 +3,24 @@
     "@hono/hono": "jsr:@hono/hono@^4.12.11",
     "@std/assert": "jsr:@std/assert@^1.0.19",
     "@std/testing": "jsr:@std/testing@^1.0.17",
+    "@types/pg": "npm:@types/pg@^8.20.0",
     "hono": "jsr:@hono/hono@^4.12.11",
-    "knex": "npm:knex@^3.2.9"
+    "knex": "npm:knex@^3.2.9",
+    "pg": "npm:pg@^8.20.0"
   },
   "tasks": {
     "start": "deno run --watch --allow-net --allow-read=. main.ts",
-    "check": "deno test tests/*.ts"
+    "check": "deno fmt **/*.ts && deno test tests/*.ts",
+    "migrate": "deno run --allow-net --allow-env --allow-read --allow-write migrate.ts"
+  },
+  "deploy": {
+    "org": "comp345spr26team1",
+    "app": "project-2-group1",
+    "install": "deno install",
+    "build": "deno task check",
+    "runtime": {
+      "entrypoint": "main.ts"
+    }
   },
   "compilerOptions": {
     "jsx": "precompile",

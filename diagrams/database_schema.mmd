@@ -6,18 +6,17 @@ erDiagram
     user_account ||--o{ user_vault_access : "decrypts with priv key"
 
     household {
-        integer group_id PK
-        string group_name
+        integer household_id PK
+        string household_name
         timestamp created_at
         timestamp updated_at
-        binary group_code_salt
-        binary group_code_hash
+        integer join_code
     }
 
     user_account {
         integer user_id PK
         string username UK
-        text public_key
+        binary public_key
         timestamp created_at
         timestamp updated_at
         binary password_salt
@@ -27,7 +26,7 @@ erDiagram
 
     household_membership {
         integer user_id PK,FK
-        integer group_id PK,FK
+        integer household_id PK,FK
         string role
         timestamp created_at
         timestamp updated_at

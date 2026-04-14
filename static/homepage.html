@@ -14,32 +14,34 @@
                 <h1>Home Page</h1>
                 <!--Edit/view profile and logout buttons-->
             </header>
-            <section class="add_households">
+            <section class="add-households">
                 <h2>Add Households</h2>
-                <section class="create_household" aria-label="Create Household Form"></section>
+                <section class="create-household" aria-label="Create Household Form"></section>
                     <h3>Create New Household</h3>
-                    <form>
-                        <label for="household_name" aria-label="Household Name">Create Household:</label>
+                    <form hx-post="/create-household.html" hx-target="response-create">
+                        <label for="household-name" aria-label="Household Name">Create Household:</label>
                         <input type="text" id="name" placeholder="Household Name" aria-placeholder="Input Household Name Here" >
                         <button type="submit" name="submit">Submit</button>
+                        <div id="response-create"></div>
                     </form>
                 </section>
                     <h3>Join Household</h3>
-                <section class="join_household" aria-label="Join Household Form"></section>
-                    <form>
-                        <label for="household_name">Join Household Via Code:</label>
+                <section class="join-household" aria-label="Join Household Form"></section>
+                    <form hx-post="/join-household.html" hx-target="response-join">
+                        <label for="household-name">Join Household Via Code:</label>
                         <input type="text" id="name" placeholder="Household Join Code" aria-placeholder="Input Household Join Code Here">
                         <button type="submit" name="submit">Submit</button>
                     </form>
+                    <div id="response-join"></div>
                 </section>
             </section>
-            <section class="current_households">
+            <section class="current-households">
                 <h2>Current Households</h2>
-                <section class="manager_households">
+                <section class="manager-households">
                     <h3>Manager Households</h3>
                     <div hx-get="/api/homepage/manager-households" hx-trigger="load" hx-swap="outerHTML"></div>
                 </section>
-                <section class="member_households">
+                <section class="member-households">
                     <h3>Member Households</h3>
                     <div hx-get="/api/homepage/member-households" hx-trigger="load" hx-swap="outerHTML"></div>
                 </section>

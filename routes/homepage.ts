@@ -15,7 +15,7 @@ app.get("/", (c) => {
 
 // Route to return manager household information
 app.get("/manager-households", async (c) => {
-  let managerHTML: string = "";
+  let managerHTML: string = "test manager";
   return c.html(
     html`
         <p>${managerHTML}</p>
@@ -25,7 +25,7 @@ app.get("/manager-households", async (c) => {
 
 // Route to return member household information
 app.get("/member-households", async (c) => {
-  let memberHTML: string = "";
+  let memberHTML: string = "test member";
   return c.html(
     html`
         <p>${memberHTML}</p>
@@ -36,6 +36,12 @@ app.get("/member-households", async (c) => {
 // Route to join a household
 app.post("/join-household", async (c) => {
   let joinHTML: string = "";
+  const body = await c.req.parseBody();
+
+  const householdCode = body["householdCode"];
+
+  joinHTML += householdCode;
+  
   return c.html(
     html`
         <p>${joinHTML}</p>
@@ -46,6 +52,12 @@ app.post("/join-household", async (c) => {
 // Route to create a household
 app.post("/create-household", async (c) => {
   let createHTML: string = "";
+  const body = await c.req.parseBody();
+
+  const householdName = body["householdName"];
+
+  createHTML += householdName;
+
   return c.html(
     html`
         <p>${createHTML}</p>

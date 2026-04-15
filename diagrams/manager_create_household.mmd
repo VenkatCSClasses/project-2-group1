@@ -1,0 +1,11 @@
+sequenceDiagram
+    actor Manager
+    participant Server
+    participant Database
+
+    Manager->>Server: Create household
+    Server-->>Database: Store household information
+    Server-->>Manager: Household created successfully, return household data and redirect to household page
+    Manager->>Server: Add account to household
+    Server->>Database: Add account information to household
+    Server-->>Manager: Account added successfully, return updated household data and refresh household page

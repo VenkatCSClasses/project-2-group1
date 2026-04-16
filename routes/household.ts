@@ -254,15 +254,6 @@ app.delete("/members/:memberId", async (c) => {
     .where({ user_id: memberId, household_id: householdId })
     .del();
 
-  const hasOtherMemberships = await db("household_membership")
-    .select("user_id")
-    .where({ user_id: memberId })
-    .first();
-
-  if (!hasOtherMemberships) {
-    await db("user_account").where({ user_id: memberId }).del();
-  }
-
   return c.json({
     deleted: {
       member_id: existingMember.member_id,

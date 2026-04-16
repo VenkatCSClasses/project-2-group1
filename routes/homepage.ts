@@ -95,13 +95,25 @@ app.post("/join-household", async (c: Context) => {
     )
   }
 
-  // TODO: Ensure membership connection hasn't already been made (currently overwrites manager or throws error)
-
-  // Insert new household membership connection
-  // TODO: Implement actual user ID addition (for now it adds a user with id -1)
+  // TODO: Implement actual user ID addition (for now it adds a user with id -1
   const userID: number = -1;
   const householdID: number = household.household_id;
 
+  // TODO: Ensure membership connection hasn't already been made (currently overwrites manager or throws error)
+  const checkConnection = await db<HouseholdMembership>("household_membership")
+    .where({user_id: userID, household_id: householdID})
+    .first();
+  if (checkConnection){
+    return c.html(
+      html`
+        <script>
+          alert("Error: You are already enrolled in this household.")
+        </script>
+      `,
+    )
+  }
+
+  // Insert new household membership connection
   await db<HouseholdMembership>("household_membership")
     .insert({user_id: userID, household_id: householdID, role: "member"});
 
@@ -110,7 +122,7 @@ app.post("/join-household", async (c: Context) => {
   return c.html(
     html`
       <script>
-        alert("Successfully joined household: ${householdName}. Refreshing page!")
+        alert("UserID: ${userID} successfully joined household: ${householdName}. Refreshing page!")
         window.location.reload();
       </script>
     `,
@@ -167,7 +179,12 @@ app.post("/create-household", async (c: Context) => {
   // Insert new member connection
   // TODO: Implement actual user ID addition (creates and uses a dummy user for now)
   const [newUser] = await db<User>("user_account")
-    .insert({user_id: 2, username: `dummy_${Date.now()}`, public_key: new Uint8Array(0), password_salt: new Uint8Array(0), password_hash: new Uint8Array(0)})
+    .insert({
+      user_id: 2, 
+      username: `dummy_${Date.now()}`, 
+      public_key: new Uint8Array(0), 
+      password_salt: new Uint8Array(0), 
+      password_hash: new Uint8Array(0)})
     .returning('*');
   const dummyUser2 = newUser;
 
@@ -189,12 +206,9 @@ app.post("/create-household", async (c: Context) => {
 
 // Route to attempt to leave a household
 app.post("/leave-household", async (c: Context) => {
-  let leaveHTML: string = "";
-  return c.html(
-    html`
-        <p>${leaveHTML}</p>
-    `,
-  )
+  const body = await c.req.parseBody();
+
+  const householdID = body["householdID"];
 });
 
 export default app;

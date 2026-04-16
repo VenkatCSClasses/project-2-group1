@@ -10,33 +10,64 @@ import {
   setJWTCookie,
   unlockKey,
 } from "../cryptography.ts";
+import { deleteCookie } from "hono/cookie";
 
 const app = new Hono();
 
-app.get("/", async (c) => {
+app.get("/signup", async (c) => {
   // deno-lint-ignore no-explicit-any
-  const { loggedIn, userId } = await isLoggedIn(c as any);
+  const { loggedIn } = await isLoggedIn(c as any);
 
   if (loggedIn) {
-    return c.html(
-      html`
-        <p>You are logged in userId=${userId}</p>
-      `,
-    );
+    return loginSucceed(c);
   } else {
     return c.html(
       html`
-        <p>You are not logged in.</p>
+        <p>Please enter your details below:</p>
       `,
     );
   }
 });
 
+const loginSucceed = (c: Context) => {
+  c.res.headers.set("HX-Redirect", "/homepage");
+  return c.html(html`
+    <p>
+      Login success. You may now <a href="/homepage">proceed to your account</a>
+    </p>
+  `);
+};
+
 app.put("/signup", async (c) => {
+  // deno-lint-ignore no-explicit-any
+  if ((await isLoggedIn(c as any)).loggedIn) {
+    return loginSucceed(c);
+  }
+
   const parsedBody = await c.req.parseBody();
 
   const username: string = parsedBody.username as string;
   const password: string = parsedBody.password as string;
+
+  if (password.length < 8 || password.length > 512) {
+    return c.html(html`
+      <p>
+        Password must be between 8 and 512 characters. Please
+        <a href="/signup">try again</a>
+        with a different password.
+      </p>
+    `);
+  }
+
+  if (username.length < 3 || password.length > 128) {
+    return c.html(html`
+      <p>
+        Username must be between 3 and 128 characters. Please
+        <a href="/signup">try again</a>
+        with a different username.
+      </p>
+    `);
+  }
 
   const secrets = await generateAccountSecrets(password);
 
@@ -59,15 +90,28 @@ app.put("/signup", async (c) => {
     console.log(e);
     return c.html(html`
       <p>
-        Signup failed: username may already be taken. Please try again with a
-        different username.
+        That username may already be taken. Please <a
+          href="/signup"
+        >try again</a> with a different username.
       </p>
     `);
   }
 });
 
+app.get("/logout", (c) => {
+  deleteCookie(c, "jwt");
+  return c.html(html`
+    <p>You have been logged out and may <a href="/login">login again.</a></p>
+  `);
+});
+
 // "GET" returns the login form
 app.get("/login", async (c) => {
+  // deno-lint-ignore no-explicit-any
+  if ((await isLoggedIn(c as any)).loggedIn) {
+    return loginSucceed(c);
+  }
+
   const nonce = crypto.getRandomValues(new Int32Array(1))[0];
   const expires_at = new Date(Date.now() + 5 * 60 * 1000);
   const insertResult: Result = await db
@@ -165,15 +209,7 @@ app.post("/login", async (c) => {
     // deno-lint-ignore no-explicit-any
     await setJWTCookie(userId, c as any);
 
-    return c.html(html`
-      <p>
-        Login success.
-        <br>
-        Your id: ${userId}
-        <br>
-        Your key pair: ${publicKey.type}, ${privateKey.type}
-      </p>
-    `);
+    return loginSucceed(c);
   } catch (e) {
     console.log(e);
     return c.html(loginFail);

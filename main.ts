@@ -6,6 +6,7 @@ import { trimTrailingSlash } from "@hono/hono/trailing-slash";
 import { showRoutes } from "@hono/hono/dev";
 import { serveStatic } from "@hono/hono/deno";
 import accountRoutes from "./routes/account.ts";
+import homepageRoutes from "./routes/homepage.ts";
 import { runMigrations } from "./database/knex.ts";
 
 // Run db migrations if not already applied
@@ -24,6 +25,7 @@ app.use("/static/*", serveStatic({ root: "./" }));
 app.get("/", serveStatic({ path: "./static/index.html" }));
 
 app.route("/api/account", accountRoutes);
+app.route("/api/homepage", homepageRoutes);
 
 showRoutes(app, {
   verbose: true,

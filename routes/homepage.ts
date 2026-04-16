@@ -28,7 +28,7 @@ type User = {
   created_at: Date;
   updated_at: Date;
   password_salt: Uint8Array;
-  encrypted_private_key: Uint8Array;
+  password_hash: Uint8Array;
 }
 
 
@@ -166,18 +166,11 @@ app.post("/create-household", async (c: Context) => {
 
   // Insert new member connection
   // TODO: Implement actual user ID addition (creates and uses a dummy user for now)
-  let dummyUser2 = await db("user_account").first();
-  if (!dummyUser2) {
-    const [newUser] = await db("user_account")
-      .insert({
-        username: `dummy_${Date.now()}`,
-        public_key: new Uint8Array(0),
-        password_salt: new Uint8Array(0),
-        password_hash: new Uint8Array(0)
-      })
-      .returning('*');
-    dummyUser2 = newUser;
-  }
+  const [newUser] = await db<User>("user_account")
+    .insert({user_id: 2, username: `dummy_${Date.now()}`, public_key: new Uint8Array(0), password_salt: new Uint8Array(0), password_hash: new Uint8Array(0)})
+    .returning('*');
+  const dummyUser2 = newUser;
+
   const userID: number = dummyUser2.user_id;
   const householdID: number = household.household_id;
   await db<HouseholdMembership>("household_membership")
@@ -187,7 +180,7 @@ app.post("/create-household", async (c: Context) => {
   return c.html(
     html`
       <script>
-        alert("Successfully created household: ${householdName}. Refreshing page!")
+        alert("UserID: ${userID} successfully created household: '${householdName}'. Refreshing page!")
         window.location.reload();
       </script>
     `,

@@ -1,4 +1,4 @@
-import { Hono } from "@hono/hono";
+import { Context, Hono } from "@hono/hono";
 import { html } from "@hono/hono/html";
 import { db } from "../database/knex.ts";
 import { Result } from "pg";
@@ -6,19 +6,30 @@ import { Buffer } from "node:buffer";
 import {
   generateAccountSecrets,
   importPublicKey,
+  isLoggedIn,
+  setJWTCookie,
   unlockKey,
 } from "../cryptography.ts";
 
 const app = new Hono();
 
-app.get("/", (c) => {
-  return c.html(
-    // It's important to add html before your `template strings` so that
-    // the data is properly escaped and doesn't introduce XSS vulnerabilities.
-    html`
-      <p>You sent a request to the account route at time=${Date.now()}</p>
-    `,
-  );
+app.get("/", async (c) => {
+  // deno-lint-ignore no-explicit-any
+  const { loggedIn, userId } = await isLoggedIn(c as any);
+
+  if (loggedIn) {
+    return c.html(
+      html`
+        <p>You are logged in userId=${userId}</p>
+      `,
+    );
+  } else {
+    return c.html(
+      html`
+        <p>You are not logged in.</p>
+      `,
+    );
+  }
 });
 
 app.put("/signup", async (c) => {
@@ -149,6 +160,10 @@ app.post("/login", async (c) => {
       passwordSalt,
       encryptedPrivateKey,
     );
+
+    // Typescript weirdness when passing context to another function
+    // deno-lint-ignore no-explicit-any
+    await setJWTCookie(userId, c as any);
 
     return c.html(html`
       <p>

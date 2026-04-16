@@ -1,4 +1,11 @@
 import { Buffer } from "node:buffer";
+import { db } from "./database/knex.ts";
+import { Context } from "hono";
+import { sign, verify } from "hono/jwt";
+import { getCookie, setCookie } from "hono/cookie";
+import { CookieOptions } from "hono/utils/cookie";
+import { BlankEnv, BlankInput } from "hono/types";
+import { JWTPayload } from "hono/utils/jwt/types";
 
 // Some helper fns from mozilla examples converted to typescript
 export async function getRandomSalt(): Promise<Uint8Array> {
@@ -98,30 +105,33 @@ export async function getSymmKeyFromPassword(
   );
 }
 
-export async function unlockKey(password: string, passwordSalt: Uint8Array, encryptedPrivateKey: Uint8Array) {
-    const derivedKey = await getSymmKeyFromPassword(
-        password,
-        Buffer.from(passwordSalt),
-    );
+export async function unlockKey(
+  password: string,
+  passwordSalt: Uint8Array,
+  encryptedPrivateKey: Uint8Array,
+) {
+  const derivedKey = await getSymmKeyFromPassword(
+    password,
+    Buffer.from(passwordSalt),
+  );
 
-    return await importPrivateKey( // convert decrypted binary to key object
-        await crypto.subtle.decrypt(
-        {
-            name: "AES-GCM",
-            iv: Buffer.from(passwordSalt.slice(0, 12)),
-        },
-        derivedKey,
-        Buffer.from(encryptedPrivateKey),
-        ),
-    );
+  return await importPrivateKey( // convert decrypted binary to key object
+    await crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv: Buffer.from(passwordSalt.slice(0, 12)),
+      },
+      derivedKey,
+      Buffer.from(encryptedPrivateKey),
+    ),
+  );
 }
 
 export async function generateAccountSecrets(password: string): Promise<{
-    public_key: Uint8Array,
-    password_salt: Uint8Array,
-    encrypted_private_key: Uint8Array,
+  public_key: Uint8Array;
+  password_salt: Uint8Array;
+  encrypted_private_key: Uint8Array;
 }> {
-
   const salt = await getRandomSalt();
   const derivedKey = await getSymmKeyFromPassword(password, Buffer.from(salt));
 
@@ -138,8 +148,63 @@ export async function generateAccountSecrets(password: string): Promise<{
   );
 
   return {
-        public_key: exportedKeys.public,
-        password_salt: salt,
-        encrypted_private_key: new Uint8Array(encryptedPrivateKeyBuffer),
-    }
+    public_key: exportedKeys.public,
+    password_salt: salt,
+    encrypted_private_key: new Uint8Array(encryptedPrivateKeyBuffer),
+  };
+}
+
+export async function getJWTSecret(): Promise<string> {
+  const row = await db.select("token").from("jwt").first();
+  if (row) {
+    return row.token;
+  } else {
+    throw new Error("No JWT key found in database");
+  }
+}
+
+/**
+ * Sets a cookie with a signed JWT for the user specified
+ * by @param userId
+ */
+export async function setJWTCookie(userId: number, c: Context): Promise<void> {
+  const payload: JWTPayload = {
+    id: userId,
+    // Token expires in 24hrs
+    exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24),
+    iss: "subseer",
+  };
+
+  const secret = await getJWTSecret();
+  const token = await sign(payload, secret, "HS512");
+
+  setCookie(c, "jwt", token, {
+    sameSite: "strict",
+    secure: true,
+    maxAge: 60 * 60 * 24, // 1 day
+  });
+}
+
+export async function isLoggedIn(
+  c: Context,
+): Promise<{ loggedIn: boolean; userId: number | undefined }> {
+  const jwt = getCookie(c, "jwt");
+
+  try {
+    const verifyResult = await verify(jwt ?? "", await getJWTSecret(), {
+      iss: "subseer",
+      alg: "HS512",
+    });
+
+    return {
+      loggedIn: true,
+      userId: verifyResult.id as number,
+    };
+  } catch (e) {
+    console.log("JWT verification failed:", e);
+    return {
+      loggedIn: false,
+      userId: undefined,
+    };
+  }
 }

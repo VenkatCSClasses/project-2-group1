@@ -5,6 +5,7 @@ import { showRoutes } from "@hono/hono/dev";
 import { serveStatic } from "@hono/hono/deno";
 import { trimTrailingSlash } from "@hono/hono/trailing-slash";
 import accountRoutes from "./routes/account.ts";
+import keychainRoutes from "./routes/keychain.ts";
 import { addHeadHTML, upgradeHTTPS } from "./middlewares.ts";
 import { runMigrations } from "./database/knex.ts";
 
@@ -47,6 +48,7 @@ app.use(
 // All routes go here =============================================
 
 app.route("/api/account", accountRoutes);
+app.route("/api/keychain", keychainRoutes);
 
 // End API routes =================================================
 

@@ -1,18 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <script
-      src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"
-      defer
-    ></script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=<device-width>, initial-scale=1.0">
+    <!-- INSERT_HEAD_HTML -->
     <title>Document</title>
   </head>
   <body>
-    <h1>Hello World!</h1>
-    <button hx-get="/api/account" hx-swap="outerHTML">
-      Make request
-    </button>
+    <div class="window">
+      <div class="title-bar">
+        <div class="title-bar-text">
+          SubSeer Introduction
+        </div>
+      </div>
+      <div class="window-body">
+        <h1>SubSeer</h1>
+        <h2>The Household Account Manager</h2>
+        <p>
+          SubSeer is a website that allows users to create and join
+          ‘households’, being able to add and access shared account information.
+          There are two levels of users in each household: managers and members.
+          Managers are able to delete the household, add/remove members,
+          promote/demote managers, add/edit/remove accounts, and review account
+          requests. They can also remove members from being able to view account
+          credentials. Members are able to create requests for new accounts to
+          be stored/created, and they can view account information for ones they
+          have access to.
+        </p>
+        <p>
+          This website will be primarily used by families/roommates who share
+          different accounts and want one localized place to store account
+          information. It will streamline the communication between members of
+          those groups by allowing everyone to see account information in one
+          place, instead of having to ask around for different credentials. If
+          account credentials are changed for a subscription, all the managers
+          have to do is just update the subscription on SubSeer, then the
+          members with valid permissions can see the new updated account
+          credentials, instead of having to pester others to find them out.
+        </p>
+        <button
+          class="full-width"
+          hx-on-click="window.location = '/login'"
+          hx-push-url="/login"
+        >
+          Login
+        </button>
+        <br><br>
+        <button class="full-width" hx-get="/api/account" hx-swap="outerHTML">
+          Sign Up
+        </button>
+      </div>
+    </div>
   </body>
 </html>

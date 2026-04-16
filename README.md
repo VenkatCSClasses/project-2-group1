@@ -16,6 +16,12 @@ This website will be primarily used by families/roommates who share different ac
 **Developer:** Rhys Maryn <br> 
 <br>
 
+# Documents
+
+[Sprint 1 Review](./documentation/post_sprint/sprint_one_review.pdf) <br>
+[Sprint 1 Retrospective](./documentation/post_sprint/sprint_one_retrospective.pdf)
+
+
 # Diagrams
 (diagrams may not be up to date)
 

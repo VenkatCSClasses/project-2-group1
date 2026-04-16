@@ -115,7 +115,7 @@ app.post("/join-household", async (c: Context) => {
 
   // Insert new household membership connection
   await db<HouseholdMembership>("household_membership")
-    .insert({user_id: userID, household_id: householdID, role: "member"});
+    .insert({user_id: userID, household_id: householdID, role: "Member"});
 
   // Success alert
   const householdName: string = household.household_name;
@@ -191,7 +191,7 @@ app.post("/create-household", async (c: Context) => {
   const userID: number = dummyUser2.user_id;
   const householdID: number = household.household_id;
   await db<HouseholdMembership>("household_membership")
-    .insert({user_id: userID, household_id: householdID, role: "manager"});
+    .insert({user_id: userID, household_id: householdID, role: "Manager"});
 
   // Success alert
   return c.html(

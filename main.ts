@@ -7,6 +7,7 @@ import { trimTrailingSlash } from "@hono/hono/trailing-slash";
 import accountRoutes from "./routes/account.ts";
 import keychainRoutes from "./routes/keychain.ts";
 import { addHeadHTML, upgradeHTTPS } from "./middlewares.ts";
+import homepageRoutes from "./routes/homepage.ts";
 import { runMigrations } from "./database/knex.ts";
 
 // Run db migrations if not already applied
@@ -48,6 +49,7 @@ app.use(
 // All routes go here =============================================
 
 app.route("/api/account", accountRoutes);
+app.route("/api/homepage", homepageRoutes);
 app.route("/api/keychain", keychainRoutes);
 
 // End API routes =================================================

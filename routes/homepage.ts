@@ -1,6 +1,7 @@
-import { Hono, Context } from "@hono/hono";
+import { Hono, Context, HonoRequest } from "@hono/hono";
 import { html } from "@hono/hono/html";
 import { db } from "../database/knex.ts";
+import { isLoggedIn } from "../cryptography.ts";
 
 const app = new Hono();
 
@@ -56,6 +57,21 @@ app.get("/member-households", async (c: Context) => {
 app.post("/join-household", async (c: Context) => {
   const body = await c.req.parseBody();
 
+  // deno-lint-ignore no-explicit-any
+  const {loggedIn, userId} = await isLoggedIn(c as any);
+
+  // Ensure user is logged in
+  if (!loggedIn || !userId){
+    return c.html(
+      html`
+        <script>
+          alert("Error: You are not logged in. Return to login page.")
+        </script>
+      `,
+    )
+  }
+  const userID: number = userId;
+
   // Parse input as a number
   const householdCode = body["householdCode"]
 
@@ -95,11 +111,8 @@ app.post("/join-household", async (c: Context) => {
     )
   }
 
-  // TODO: Implement actual user ID addition (for now it adds a user with id -1
-  const userID: number = -1;
   const householdID: number = household.household_id;
 
-  // TODO: Ensure membership connection hasn't already been made (currently overwrites manager or throws error)
   const checkConnection = await db<HouseholdMembership>("household_membership")
     .where({user_id: userID, household_id: householdID})
     .first();
@@ -132,6 +145,21 @@ app.post("/join-household", async (c: Context) => {
 // Route to create a household
 app.post("/create-household", async (c: Context) => {
   const body = await c.req.parseBody();
+
+  // deno-lint-ignore no-explicit-any
+  const {loggedIn, userId} = await isLoggedIn(c as any);
+
+  // Ensure user is logged in
+  if (!loggedIn || !userId){
+    return c.html(
+      html`
+        <script>
+          alert("Error: You are not logged in. Return to login page.")
+        </script>
+      `,
+    )
+  }
+  const userID: number = userId;
 
   const householdName = body["householdName"];
 
@@ -177,18 +205,6 @@ app.post("/create-household", async (c: Context) => {
     .returning('*')
 
   // Insert new member connection
-  // TODO: Implement actual user ID addition (creates and uses a dummy user for now)
-  const [newUser] = await db<User>("user_account")
-    .insert({
-      user_id: 2, 
-      username: `dummy_${Date.now()}`, 
-      public_key: new Uint8Array(0), 
-      password_salt: new Uint8Array(0), 
-      password_hash: new Uint8Array(0)})
-    .returning('*');
-  const dummyUser2 = newUser;
-
-  const userID: number = dummyUser2.user_id;
   const householdID: number = household.household_id;
   await db<HouseholdMembership>("household_membership")
     .insert({user_id: userID, household_id: householdID, role: "Manager"});
@@ -208,7 +224,121 @@ app.post("/create-household", async (c: Context) => {
 app.post("/leave-household", async (c: Context) => {
   const body = await c.req.parseBody();
 
+  const {loggedIn, userId} = await isLoggedIn(c as any);
+
+  // Ensure user is logged in
+  if (!loggedIn || !userId){
+    return c.html(
+      html`
+        <script>
+          alert("Error: You are not logged in. Return to login page.")
+        </script>
+      `,
+    )
+  }
+  const userID: number = userId;
+
   const householdID = body["householdID"];
+
+  // Ensure householdID is not a file
+  if (typeof householdID !== "string"){
+    return c.html(
+      html`
+        <script>
+          alert("Error: Household ID must reference a valid, existing household that you are in.")
+        </script>
+      `,
+    )
+  } 
+
+  // Ensure householdID is numeric
+  if (!/^d+$/.test(householdID.trim())){
+    return c.html(
+      html`
+        <script>
+          alert("Error: Household ID must reference a valid, existing household that you are in.")
+        </script>
+      `,
+    )
+  } 
+
+  // Ensure householdID references a household that exists
+  const household = await db<Household>("household")
+    .where({household_id: householdID}).first();
+  if (!household){
+    return c.html(
+      html`
+        <script>
+          alert("Error: Household ID must reference a valid, existing household that you are in.")
+        </script>
+      `,
+    )
+  }
+
+  // Check to see if user actually is a part of the household
+  const connection = await db<HouseholdMembership>("household_membership")
+    .where({household_id: householdID, user_id: userID})
+  if (!connection){
+    return c.html(
+      html`
+        <script>
+          alert("Error: Household ID must reference a valid, existing household that you are in.")
+        </script>
+      `,
+    )
+  }
+
+  let otherManager: boolean = false;
+  // Check to see if there are others in the household, see if there are other managers
+  const users = await db<HouseholdMembership>("household_membership")
+    .where({household_id: householdID});
+
+  for (const user of users){
+    if (user.role === "Manager"){
+      otherManager = true;
+      break;
+    }
+  }
+
+  if (!otherManager){
+    return c.html(
+      html`
+        <script>
+          alert("Error: Cannot leave a household with existing members and no manager. Inform members to leave.")
+        </script>
+      `,
+    )
+  }
+
+  // Remove user connection
+  await db<HouseholdMembership>("household_membership")
+    .where({household_id: householdID, user_id: userID})
+    .del();
+  
+  // Delete household if no one in household
+  if (users.length === 1){
+    await db<Household>("household")
+      .where({household_id: householdID})
+      .del();
+    
+    return c.html(
+      html`
+        <script>
+          alert("Household successfully left with no users, deleting household. Refreshing page!")
+          window.location.reload(); 
+        </script>
+      `,
+    )
+  }
+
+  return c.html(
+      html`
+        <script>
+          alert("Household successfully left. Refreshing page!")
+          window.location.reload(); 
+        </script>
+      `,
+    )
 });
 
 export default app;

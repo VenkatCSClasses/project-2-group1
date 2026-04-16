@@ -1,3 +1,5 @@
+<!-- Assisted-by: GitHub Copilot:GPT-5.3-Codex [apply_patch] [get_errors] -->
+ 
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -154,6 +156,37 @@
         margin: 0 0 7px;
       }
 
+      .viewer-context {
+        margin: 0 0 10px;
+        padding: 8px 10px;
+        border: 1px solid #7e7e7e;
+        background: #eef6e8;
+        font-weight: 700;
+      }
+
+      .viewer-context.manager {
+        background: #e6f4ff;
+      }
+
+      .viewer-context.member {
+        background: #fff6df;
+      }
+
+      .manager-only-note {
+        margin: 8px 0;
+        font-size: 0.95rem;
+      }
+
+      .join-code-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .join-code-copy-btn {
+        min-width: 58px;
+      }
+
       .members {
         background: #f4f4f4;
       }
@@ -184,6 +217,9 @@
       <div class="window-body">
         <article class="household-card" aria-label="Household placeholder">
           <h2 id="household-name" class="section-title">Loading household...</h2>
+          <p id="viewer-context" class="viewer-context" role="status" aria-live="polite">
+            Loading user context...
+          </p>
           <div class="top-grid">
             <section aria-label="Household overview" class="section-panel overview" >
               <h3 class="section-title">Household Overview</h3>
@@ -192,7 +228,14 @@
                 <dd id="household-id">-</dd>
 
                 <dt>Join Code:</dt>
-                <dd id="household-join-code">-</dd>
+                <dd>
+                  <span class="join-code-wrap">
+                    <span id="household-join-code">-</span>
+                    <button id="copy-join-code-btn" class="join-code-copy-btn" type="button" disabled>
+                      Copy
+                    </button>
+                  </span>
+                </dd>
 
                 <dt>Created:</dt>
                 <dd><time id="household-created" datetime="">-</time></dd>
@@ -203,6 +246,7 @@
                 <dt>Member Count:</dt>
                 <dd id="household-member-count">0</dd>
               </dl>
+              <p id="join-code-status" class="status" role="status" aria-live="polite"></p>
             </section>
 
             <section class="members section-panel" aria-label="Household members">
@@ -229,6 +273,7 @@
 
               <button type="submit">Add account</button>
             </form>
+            <p id="manager-only-note" class="manager-only-note"></p>
 
             <p id="account-status" class="status" role="status" aria-live="polite"></p>
 
@@ -243,22 +288,73 @@
       const accountsForm = document.getElementById("accounts-form");
       const statusEl = document.getElementById("account-status");
       const memberStatusEl = document.getElementById("member-status");
+      const viewerContextEl = document.getElementById("viewer-context");
+      const managerOnlyNoteEl = document.getElementById("manager-only-note");
       const membersOutput = document.getElementById("members-output");
       const householdNameEl = document.getElementById("household-name");
       const householdIdEl = document.getElementById("household-id");
       const householdJoinCodeEl = document.getElementById("household-join-code");
+      const copyJoinCodeBtn = document.getElementById("copy-join-code-btn");
+      const joinCodeStatusEl = document.getElementById("join-code-status");
       const householdCreatedEl = document.getElementById("household-created");
       const householdUpdatedEl = document.getElementById("household-updated");
       const householdMemberCountEl = document.getElementById("household-member-count");
       let currentHouseholdId = null;
+      let currentUserId = null;
 
       function escapeHtml(value) {
-        return value
+        return String(value)
           .replaceAll("&", "&amp;")
           .replaceAll("<", "&lt;")
           .replaceAll(">", "&gt;")
           .replaceAll('"', "&quot;")
           .replaceAll("'", "&#39;");
+      }
+
+      function parsePositiveInteger(value) {
+        if (value === null || value === "") {
+          return null;
+        }
+
+        const parsed = Number(value);
+        if (!Number.isInteger(parsed) || parsed <= 0) {
+          return null;
+        }
+
+        return parsed;
+      }
+
+      function readParam(searchParams, keys) {
+        for (const key of keys) {
+          const value = searchParams.get(key);
+          if (value !== null && value !== "") {
+            return value;
+          }
+        }
+
+        return null;
+      }
+
+      function getPageContextIds() {
+        const searchParams = new URLSearchParams(window.location.search);
+
+        const householdRaw = readParam(searchParams, [
+          "householdId",
+          "household_id",
+          "househildId",
+          "househild_id",
+        ]);
+        const userRaw = readParam(searchParams, ["userId", "user_id"]);
+
+        return {
+          householdId: parsePositiveInteger(householdRaw),
+          userId: parsePositiveInteger(userRaw),
+        };
+      }
+
+      function applyRoleDisplayState() {
+        accountsForm.style.display = "grid";
+        managerOnlyNoteEl.textContent = "";
       }
 
       function renderAccounts(accounts) {
@@ -322,7 +418,7 @@
 
       async function loadAccounts() {
         if (currentHouseholdId === null) {
-          accountsOutput.textContent = "Create a household first to add accounts.";
+          accountsOutput.textContent = "Select a valid household first.";
           return;
         }
 
@@ -371,7 +467,7 @@
 
       async function loadMembers() {
         if (currentHouseholdId === null) {
-          membersOutput.innerHTML = "<li>Create a household first to view members.</li>";
+          membersOutput.innerHTML = "<li>Select a valid household first.</li>";
           return;
         }
 
@@ -397,42 +493,70 @@
         return date.toLocaleString();
       }
 
-      function renderHousehold(household) {
-        if (!household) {
+      function renderHouseholdContext(context) {
+        if (!context || !context.household || !context.user) {
           householdNameEl.textContent = "No household found";
           householdIdEl.textContent = "-";
           householdJoinCodeEl.textContent = "-";
+          copyJoinCodeBtn.disabled = true;
+          joinCodeStatusEl.textContent = "";
           householdCreatedEl.textContent = "-";
           householdCreatedEl.setAttribute("datetime", "");
           householdUpdatedEl.textContent = "-";
           householdUpdatedEl.setAttribute("datetime", "");
           currentHouseholdId = null;
+          viewerContextEl.className = "viewer-context";
+          viewerContextEl.textContent = "Could not load user context.";
+          applyRoleDisplayState();
           return;
         }
 
+        const household = context.household;
+        const user = context.user;
+        const role = String(user.role || "member").toLowerCase();
+        const isManager = role === "manager" || user.is_manager === true;
+
         currentHouseholdId = household.household_id;
+        currentUserId = user.user_id;
         householdNameEl.textContent = household.household_name;
         householdIdEl.textContent = String(household.household_id);
         householdJoinCodeEl.textContent = String(household.join_code);
+        copyJoinCodeBtn.disabled = false;
+        joinCodeStatusEl.textContent = "";
         householdCreatedEl.textContent = formatDate(household.created_at);
         householdCreatedEl.setAttribute("datetime", household.created_at);
         householdUpdatedEl.textContent = formatDate(household.updated_at);
         householdUpdatedEl.setAttribute("datetime", household.updated_at);
+        viewerContextEl.className = `viewer-context ${isManager ? "manager" : "member"}`;
+        viewerContextEl.textContent = `Viewing as ${user.username} - ${isManager ? "Manager" : "Member"}`;
+        applyRoleDisplayState();
       }
 
-      async function loadHousehold() {
+      async function loadHouseholdContext() {
+        const ids = getPageContextIds();
+
+        if (ids.householdId === null || ids.userId === null) {
+          renderHouseholdContext(null);
+          accountsOutput.textContent = "Missing required query params: householdId and userId.";
+          membersOutput.innerHTML = "<li>Missing required query params: householdId and userId.</li>";
+          return;
+        }
+
         try {
-          const response = await fetch("/api/household");
+          const response = await fetch(
+            `/api/household/context?household_id=${ids.householdId}&user_id=${ids.userId}`,
+          );
 
           if (!response.ok) {
-            throw new Error("Failed to load households");
+            throw new Error("Failed to load household context");
           }
 
           const payload = await response.json();
-          const households = Array.isArray(payload.data) ? payload.data : [];
-          renderHousehold(households[0] || null);
+          renderHouseholdContext(payload);
         } catch (_error) {
-          renderHousehold(null);
+          renderHouseholdContext(null);
+          accountsOutput.textContent = "Unable to load household context right now.";
+          membersOutput.innerHTML = "<li>Unable to load household context right now.</li>";
         }
       }
 
@@ -479,6 +603,22 @@
         }
       });
 
+      copyJoinCodeBtn.addEventListener("click", async () => {
+        const joinCode = householdJoinCodeEl.textContent?.trim() || "";
+        if (!joinCode || joinCode === "-") {
+          joinCodeStatusEl.textContent = "No join code to copy.";
+          return;
+        }
+
+        try {
+          await navigator.clipboard.writeText(joinCode);
+          joinCodeStatusEl.textContent = "Join code copied.";
+          setCopiedState(copyJoinCodeBtn);
+        } catch (_error) {
+          joinCodeStatusEl.textContent = "Could not copy join code.";
+        }
+      });
+
       membersOutput.addEventListener("click", async (event) => {
         const target = event.target;
 
@@ -487,7 +627,7 @@
         }
 
         const memberId = Number(target.dataset.memberId || "");
-        if (!Number.isInteger(memberId) || currentHouseholdId === null) {
+        if (!Number.isInteger(memberId) || currentHouseholdId === null || currentUserId === null) {
           memberStatusEl.textContent = "Invalid member selected.";
           return;
         }
@@ -523,7 +663,7 @@
         };
 
         if (currentHouseholdId === null) {
-          statusEl.textContent = "Create a household first.";
+          statusEl.textContent = "Select a valid household first.";
           return;
         }
 
@@ -559,7 +699,12 @@
       });
 
       async function initializePage() {
-        await loadHousehold();
+        await loadHouseholdContext();
+
+        if (currentHouseholdId === null) {
+          return;
+        }
+
         await Promise.all([loadMembers(), loadAccounts()]);
       }
 

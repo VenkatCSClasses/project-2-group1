@@ -6,18 +6,80 @@
       defer
     ></script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=<device-width>, initial-scale=1.0">
-    <title>Document</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SubSeer Launcher</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 720px;
+        margin: 32px auto;
+        padding: 0 16px;
+      }
+
+      .launcher {
+        margin-top: 18px;
+        padding: 14px;
+        border: 1px solid #bdbdbd;
+        border-radius: 6px;
+      }
+
+      .field {
+        display: grid;
+        gap: 4px;
+        margin-bottom: 10px;
+      }
+
+      input {
+        padding: 8px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+      }
+    </style>
   </head>
   <body>
-    <h1>Hello World!</h1>
+    <h1>SubSeer</h1>
     <button hx-get="/api/account" hx-swap="outerHTML">
       Make request
     </button>
-    <p>
-      <button type="button" onclick="window.location.href='/static/household.html'">
-        Open Test Household View
-      </button>
-    </p>
+
+    <section class="launcher" aria-label="Household page launcher">
+      <h2>Open Household Page</h2>
+      <form method="get" action="/static/household.html">
+        <div class="field">
+          <label for="householdId">Household ID</label>
+          <input
+            id="householdId"
+            name="householdId"
+            type="number"
+            min="1"
+            required
+            placeholder="1"
+          >
+        </div>
+
+        <div class="field">
+          <label for="userId">User ID</label>
+          <input
+            id="userId"
+            name="userId"
+            type="number"
+            min="1"
+            required
+            placeholder="1"
+          >
+        </div>
+
+        <div class="actions">
+          <button type="submit">Launch Household View</button>
+          <button type="button" onclick="window.location.href='/static/household.html'">
+            Open Without Params
+          </button>
+        </div>
+      </form>
+    </section>
   </body>
 </html>

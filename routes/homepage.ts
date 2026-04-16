@@ -146,7 +146,7 @@ app.post("/create-household", async (c: Context) => {
   }
 
   // Generate new join code (stretch goal, make more secure??)
-  let joinCode: string;
+  let joinCode: number;
   let tempHousehold: Household | undefined;
 
   do {
@@ -161,18 +161,29 @@ app.post("/create-household", async (c: Context) => {
 
   // Insert new household
   const [household] = await db<Household>("household")
-    .insert({household_name: householdName, join_code: householdCode})
+    .insert({household_name: householdName, join_code: joinCode})
     .returning('*')
 
   // Insert new member connection
-  // TODO: Implement actual user ID addition (for now it adds a user with id -1)
-  const userID: number = -1;
+  // TODO: Implement actual user ID addition (creates and uses a dummy user for now)
+  let dummyUser2 = await db("user_account").first();
+  if (!dummyUser2) {
+    const [newUser] = await db("user_account")
+      .insert({
+        username: `dummy_${Date.now()}`,
+        public_key: new Uint8Array(0),
+        password_salt: new Uint8Array(0),
+        password_hash: new Uint8Array(0)
+      })
+      .returning('*');
+    dummyUser2 = newUser;
+  }
+  const userID: number = dummyUser2.user_id;
   const householdID: number = household.household_id;
   await db<HouseholdMembership>("household_membership")
     .insert({user_id: userID, household_id: householdID, role: "manager"});
 
   // Success alert
-  const householdName: string = household.household_name;
   return c.html(
     html`
       <script>

@@ -64,7 +64,7 @@ app.post("/join-household", async (c: Context) => {
     return c.html(
       html`
         <script>
-          alert("Error: Join Code must be a valid six digit integer code.")
+          alert("Error: Household Join Code must be a valid six digit integer code.")
         </script>
       `,
     )
@@ -75,7 +75,7 @@ app.post("/join-household", async (c: Context) => {
     return c.html(
       html`
         <script>
-          alert("Error: Join Code must be a valid six digit integer code.")
+          alert("Error: Household Join Code must be a valid six digit integer code.")
         </script>
       `,
     )
@@ -89,13 +89,15 @@ app.post("/join-household", async (c: Context) => {
     return c.html(
       html`
         <script>
-          alert("Error: Join Code does not exist.")
+          alert("Error: Household Join Code does not exist.")
         </script>
       `,
     )
   }
 
-  // Import 
+  // TODO: Ensure membership connection hasn't already been made (currently overwrites manager or throws error)
+
+  // Insert new household membership connection
   // TODO: Implement actual user ID addition (for now it adds a user with id -1)
   const userID: number = -1;
   const householdID: number = household.household_id;
@@ -103,6 +105,7 @@ app.post("/join-household", async (c: Context) => {
   await db<HouseholdMembership>("household_membership")
     .insert({user_id: userID, household_id: householdID, role: "member"});
 
+  // Success alert
   const householdName: string = household.household_name;
   return c.html(
     html`
@@ -116,16 +119,66 @@ app.post("/join-household", async (c: Context) => {
 
 // Route to create a household
 app.post("/create-household", async (c: Context) => {
-  let createHTML: string = "";
   const body = await c.req.parseBody();
 
   const householdName = body["householdName"];
 
-  createHTML += householdName;
+  // Ensure input is a string, not a file
+  if (typeof householdName !== "string"){
+    return c.html(
+      html`
+        <script>
+          alert("Error: Household Name must be alphanumeric with max 32 characters.")
+        </script>
+      `,
+    )
+  } 
 
+  // Check alphanumeric and 32 or less characters
+  if (!/^[a-zA-Z0-9]{1,32}$/.test(householdName.trim())){
+    return c.html(
+      html`
+        <script>
+          alert("Error: Household Name must be alphanumeric with max 32 characters.")
+        </script>
+      `,
+    )
+  }
+
+  // Generate new join code (stretch goal, make more secure??)
+  let joinCode: string;
+  let tempHousehold: Household | undefined;
+
+  do {
+    joinCode = Math.floor(Math.random() * 1000000);
+
+    // Check and see if join code exists
+    tempHousehold = await db<Household>("household")
+      .where({join_code: joinCode})
+      .first();
+  } 
+  while (tempHousehold);
+
+  // Insert new household
+  const [household] = await db<Household>("household")
+    .insert({household_name: householdName, join_code: householdCode})
+    .returning('*')
+
+  // Insert new member connection
+  // TODO: Implement actual user ID addition (for now it adds a user with id -1)
+  const userID: number = -1;
+  const householdID: number = household.household_id;
+  await db<HouseholdMembership>("household_membership")
+    .insert({user_id: userID, household_id: householdID, role: "manager"});
+
+  // Success alert
+  const householdName: string = household.household_name;
   return c.html(
     html`
-        <p>${createHTML}</p>
+      <script>
+        alert("Successfully created household: ${householdName}. Refreshing page!")
+        window.location.reload();
+      </script>
     `,
   )
 });

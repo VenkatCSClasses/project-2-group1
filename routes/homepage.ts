@@ -74,5 +74,28 @@ app.post("/leave-household", async (c) => {
     `,
   )
 });
+// Route to view household information (members, managers, etc.)
+app.get("/household-view", (c) => {
+  return c.html(
+    html`
+      <html>
+        <body>
+          <h1>Household View</h1>
+
+          <h2>Households</h2>
+          <p>Household list will go here</p>
+
+          <h2>Members</h2>
+          <p>Member list will go here</p>
+
+          <h2>Managers</h2>
+          <p>Manager list will go here</p>
+
+          <a href="/main-page">Back to homepage</a>
+        </body>
+      </html>
+    `,
+  );
+});
 
 export default app;

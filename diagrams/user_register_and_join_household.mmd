@@ -1,0 +1,14 @@
+sequenceDiagram
+    actor Member
+    actor Manager
+    participant Server
+    participant Database
+
+    Member->>Server: Register with email and password
+    Server->>Database: Store member information
+    Server-->>Member: Registration successful
+    Member->>Manager: Request to join household (outside of app)
+    Manager-->>Member: Provide household code
+    Member->>Server: Join household with code
+    Server->>Database: Validate household code and add member to household
+    Server-->>Member: Join successful

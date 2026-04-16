@@ -1,0 +1,27 @@
+html {
+    background-color: #a8ea90ff;
+}
+
+body {
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 20px;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.center-horizontally {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+
+h1,h2,h3,h4,h5,h6 {
+    font-family: 'Times New Roman', Times, serif;
+    font-size-adjust: 0.2;
+    margin: 0;
+    margin-bottom: 5px;
+}

@@ -1,0 +1,15 @@
+sequenceDiagram
+    actor User
+    participant Server
+    participant Database
+
+    User->>Server: Login with email and password
+    Server->>Database: Validate credentials
+    alt Valid credentials
+        Server-->>User: Login successful, return user data and token, and redirect to homepage
+    else Invalid credentials
+        Server-->>User: Login failed, return error message
+    end
+    User-->>Server: Select Household
+    Server->>Database: Retrieve household information
+    Server-->>User: Return household data and redirect to household dashboard

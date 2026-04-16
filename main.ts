@@ -8,6 +8,7 @@ import { serveStatic } from "@hono/hono/deno";
 import accountRoutes from "./routes/account.ts";
 import householdRoutes from "./routes/household.ts";
 import { ensureSampleHousehold, runMigrations } from "./database/knex.ts";
+import homepageRoutes from "./routes/homepage.ts";
 
 // Run db migrations if not already applied
 await runMigrations();
@@ -27,6 +28,7 @@ app.get("/", serveStatic({ path: "./static/index.html" }));
 
 app.route("/api/account", accountRoutes);
 app.route("/api/household", householdRoutes);
+app.route("/api/homepage", homepageRoutes);
 
 showRoutes(app, {
   verbose: true,

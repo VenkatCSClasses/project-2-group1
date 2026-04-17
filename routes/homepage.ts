@@ -64,9 +64,7 @@ app.post("/join-household", async (c: Context) => {
   if (!loggedIn || !userId){
     return c.html(
       html`
-        <script>
-          alert("Error: You are not logged in. Return to login page.")
-        </script>
+        "Error: You are not logged in. Return to login page."
       `,
     )
   }
@@ -79,9 +77,7 @@ app.post("/join-household", async (c: Context) => {
   if (typeof householdCode !== "string"){
     return c.html(
       html`
-        <script>
-          alert("Error: Household Join Code must be a valid six digit integer code.")
-        </script>
+        "Error: Household Join Code must be a valid six digit integer code."
       `,
     )
   } 
@@ -90,9 +86,7 @@ app.post("/join-household", async (c: Context) => {
   if (!/^\d{6}$/.test(householdCode.trim())){
     return c.html(
       html`
-        <script>
-          alert("Error: Household Join Code must be a valid six digit integer code.")
-        </script>
+        "Error: Household Join Code must be a valid six digit integer code."
       `,
     )
   }
@@ -104,9 +98,7 @@ app.post("/join-household", async (c: Context) => {
   if (!household){
     return c.html(
       html`
-        <script>
-          alert("Error: Household Join Code does not exist.")
-        </script>
+        "Error: Household Join Code does not exist."
       `,
     )
   }
@@ -119,9 +111,7 @@ app.post("/join-household", async (c: Context) => {
   if (checkConnection){
     return c.html(
       html`
-        <script>
-          alert("Error: You are already enrolled in this household.")
-        </script>
+        "Error: You are already enrolled in this household."
       `,
     )
   }
@@ -134,10 +124,7 @@ app.post("/join-household", async (c: Context) => {
   const householdName: string = household.household_name;
   return c.html(
     html`
-      <script>
-        alert("UserID: ${userID} successfully joined household: ${householdName}. Refreshing page!")
-        window.location.reload();
-      </script>
+      "UserID: ${userID} successfully joined household: ${householdName}. Refreshing page!"
     `,
   )
 });
@@ -153,9 +140,7 @@ app.post("/create-household", async (c: Context) => {
   if (!loggedIn || !userId){
     return c.html(
       html`
-        <script>
-          alert("Error: You are not logged in. Return to login page.")
-        </script>
+        "Error: You are not logged in. Return to login page."
       `,
     )
   }
@@ -167,9 +152,7 @@ app.post("/create-household", async (c: Context) => {
   if (typeof householdName !== "string"){
     return c.html(
       html`
-        <script>
-          alert("Error: Household Name must be alphanumeric with max 32 characters.")
-        </script>
+        "Error: Household Name must be alphanumeric with max 32 characters."
       `,
     )
   } 
@@ -178,9 +161,7 @@ app.post("/create-household", async (c: Context) => {
   if (!/^[a-zA-Z0-9]{1,32}$/.test(householdName.trim())){
     return c.html(
       html`
-        <script>
-          alert("Error: Household Name must be alphanumeric with max 32 characters.")
-        </script>
+        "Error: Household Name must be alphanumeric with max 32 characters."
       `,
     )
   }
@@ -212,10 +193,7 @@ app.post("/create-household", async (c: Context) => {
   // Success alert
   return c.html(
     html`
-      <script>
-        alert("UserID: ${userID} successfully created household: '${householdName}'. Refreshing page!")
-        window.location.reload();
-      </script>
+      "UserID: ${userID} successfully created household: '${householdName}' with join code ${joinCode}."
     `,
   )
 });
@@ -230,9 +208,7 @@ app.post("/leave-household", async (c: Context) => {
   if (!loggedIn || !userId){
     return c.html(
       html`
-        <script>
-          alert("Error: You are not logged in. Return to login page.")
-        </script>
+        "Error: You are not logged in. Return to login page."
       `,
     )
   }
@@ -244,9 +220,7 @@ app.post("/leave-household", async (c: Context) => {
   if (typeof householdID !== "string"){
     return c.html(
       html`
-        <script>
-          alert("Error: Household ID must reference a valid, existing household that you are in.")
-        </script>
+        "Error: Household ID must reference a valid, existing household that you are in."
       `,
     )
   } 
@@ -255,9 +229,7 @@ app.post("/leave-household", async (c: Context) => {
   if (!/^d+$/.test(householdID.trim())){
     return c.html(
       html`
-        <script>
-          alert("Error: Household ID must reference a valid, existing household that you are in.")
-        </script>
+        "Error: Household ID must reference a valid, existing household that you are in."
       `,
     )
   } 
@@ -268,9 +240,7 @@ app.post("/leave-household", async (c: Context) => {
   if (!household){
     return c.html(
       html`
-        <script>
-          alert("Error: Household ID must reference a valid, existing household that you are in.")
-        </script>
+        "Error: Household ID must reference a valid, existing household that you are in."
       `,
     )
   }
@@ -278,36 +248,35 @@ app.post("/leave-household", async (c: Context) => {
   // Check to see if user actually is a part of the household
   const connection = await db<HouseholdMembership>("household_membership")
     .where({household_id: householdID, user_id: userID})
+    .first()
   if (!connection){
     return c.html(
       html`
-        <script>
-          alert("Error: Household ID must reference a valid, existing household that you are in.")
-        </script>
+        "Error: Household ID must reference a valid, existing household that you are in."
       `,
     )
   }
 
   let otherManager: boolean = false;
-  // Check to see if there are others in the household, see if there are other managers
+  // Check to see if there are others in the household, see if there are other managers (if user is manager)
   const users = await db<HouseholdMembership>("household_membership")
     .where({household_id: householdID});
 
-  for (const user of users){
-    if (user.role === "Manager"){
-      otherManager = true;
-      break;
+  if (connection.role === "Manager"){
+    for (const user of users){
+      if (user.role === "Manager"){
+        otherManager = true;
+        break;
+      }
     }
-  }
 
-  if (!otherManager){
-    return c.html(
-      html`
-        <script>
-          alert("Error: Cannot leave a household with existing members and no manager. Inform members to leave.")
-        </script>
-      `,
-    )
+    if (!otherManager){
+      return c.html(
+        html`
+         "Error: Cannot leave a household with existing members and no manager. Inform members to leave."
+        `,
+      )
+    }
   }
 
   // Remove user connection
@@ -323,20 +292,14 @@ app.post("/leave-household", async (c: Context) => {
     
     return c.html(
       html`
-        <script>
-          alert("Household successfully left with no users, deleting household. Refreshing page!")
-          window.location.reload(); 
-        </script>
+        "Household successfully left with no users, deleting household."
       `,
     )
   }
 
   return c.html(
       html`
-        <script>
-          alert("Household successfully left. Refreshing page!")
-          window.location.reload(); 
-        </script>
+        "Household successfully left."
       `,
     )
 });

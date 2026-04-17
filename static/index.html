@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <!-- INSERT_HEAD_HTML -->
-    <title>Document</title>
+    <title>SubSeer</title>
   </head>
   <body>
     <div class="window">
@@ -36,17 +36,17 @@
           members with valid permissions can see the new updated account
           credentials, instead of having to pester others to find them out.
         </p>
-        <button
-          class="full-width"
-          hx-on-click="window.location = '/login'"
-          hx-push-url="/login"
-        >
-          Login
-        </button>
+        <a href="/login">
+          <button class="full-width">
+            Log In
+          </button>
+        </a>
         <br><br>
-        <button class="full-width" hx-get="/api/account" hx-swap="outerHTML">
-          Sign Up
-        </button>
+        <a href="/login">
+          <button class="full-width">
+            Sign Up
+          </button>
+        </a>
       </div>
     </div>
   </body>

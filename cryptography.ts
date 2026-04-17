@@ -200,8 +200,7 @@ export async function isLoggedIn(
       loggedIn: true,
       userId: verifyResult.id as number,
     };
-  } catch (e) {
-    console.log("JWT verification failed:", e);
+  } catch (_) {
     return {
       loggedIn: false,
       userId: undefined,

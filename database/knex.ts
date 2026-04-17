@@ -15,6 +15,8 @@ const migrationConfig: Knex.MigratorConfig = {
   directory: "./database/migrations",
   extension: "ts",
   tableName: "knex_migrations",
+  // Some historical migrations were applied in existing databases but are no longer in source control.
+  disableMigrationsListValidation: true,
 };
 
 export const db = knex(config);

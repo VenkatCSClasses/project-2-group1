@@ -77,8 +77,8 @@ app.post("/leave-household", async (c) => {
 });
 
 // Route to view household information (members, managers, etc.)
-app.get("/household-view", async (c) => {
-  const households = await db("household").select("*");
+app.get("/household-view", async (c: Context) => {
+  const households = await db<Household>("household").select("*");
 
   const memberships = await db("household_membership")
     .join("user_account", "household_membership.user_id", "user_account.user_id")
@@ -92,17 +92,110 @@ app.get("/household-view", async (c) => {
   return c.html(
     html`
       <html>
-        <body>
-          <h1>Household View</h1>
+        <head>
+          <title>Household View</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              background: linear-gradient(to bottom right, #fdf2f8, #f3e8ff, #ede9fe);
+              color: #3b0764;
+              margin: 0;
+              padding: 40px 20px;
+            }
 
-          ${
+            .container {
+              max-width: 900px;
+              margin: 0 auto;
+            }
+
+            h1 {
+              text-align: center;
+              font-size: 3rem;
+              margin-bottom: 10px;
+            }
+
+            .subtitle {
+              text-align: center;
+              font-size: 1.1rem;
+              margin-bottom: 35px;
+              color: #6b21a8;
+            }
+
+            .card {
+              background: white;
+              border-radius: 20px;
+              padding: 24px;
+              margin-bottom: 24px;
+              box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+              border: 1px solid #f5d0fe;
+            }
+
+            h2 {
+              margin-top: 0;
+              color: #7e22ce;
+            }
+
+            h3 {
+              margin-bottom: 8px;
+              color: #9333ea;
+            }
+
+            .join-code {
+              display: inline-block;
+              background: #fce7f3;
+              color: #9d174d;
+              padding: 8px 14px;
+              border-radius: 999px;
+              font-size: 0.95rem;
+              margin-bottom: 16px;
+            }
+
+            ul {
+              padding-left: 20px;
+            }
+
+            li {
+              margin-bottom: 6px;
+            }
+
+            .empty {
+              background: white;
+              border-radius: 18px;
+              padding: 30px;
+              text-align: center;
+              box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+              border: 1px solid #f5d0fe;
+            }
+
+            .back-link {
+              display: inline-block;
+              margin-top: 20px;
+              text-decoration: none;
+              background: #c084fc;
+              color: white;
+              padding: 12px 18px;
+              border-radius: 12px;
+              font-weight: bold;
+            }
+
+            .back-link:hover {
+              background: #a855f7;
+            }
+
+            .section-label {
+              margin-top: 18px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Household View</h1>
+            <p class="subtitle">View your households, members, and managers in one place</p>
+
+            ${
       households.length > 0
         ? html`
-              ${households.map((household: {
-          household_id: number;
-          household_name: string;
-          join_code: number;
-        }) => {
+              ${households.map((household) => {
           const householdMembers = memberships.filter((m: {
             household_id: number;
             role: string;
@@ -111,54 +204,65 @@ app.get("/household-view", async (c) => {
           }) => m.household_id === household.household_id);
 
           const managers = householdMembers.filter((m: { role: string }) =>
-            m.role === "manager"
+            m.role.toLowerCase() === "manager"
           );
+
           const members = householdMembers.filter((m: { role: string }) =>
-            m.role === "member"
+            m.role.toLowerCase() === "member"
           );
 
           return html`
-                    <section style="margin-bottom: 2rem;">
-                      <h2>${household.household_name}</h2>
-                      <p>Join Code: ${household.join_code}</p>
+                <div class="card">
+                  <h2>${household.household_name}</h2>
+                  <div class="join-code">Join Code: ${household.join_code}</div>
 
-                      <h3>Managers</h3>
-                      ${
+                  <div class="section-label">
+                    <h3>Managers</h3>
+                    ${
             managers.length > 0
               ? html`
-                              <ul>
-                                ${
+                          <ul>
+                            ${
                 managers.map((manager: { username: string }) =>
                   html`<li>${manager.username}</li>`
                 )
               }
-                              </ul>
-                            `
+                          </ul>
+                        `
               : html`<p>No managers found.</p>`
           }
+                  </div>
 
-                      <h3>Members</h3>
-                      ${
+                  <div class="section-label">
+                    <h3>Members</h3>
+                    ${
             members.length > 0
               ? html`
-                              <ul>
-                                ${
+                          <ul>
+                            ${
                 members.map((member: { username: string }) =>
                   html`<li>${member.username}</li>`
                 )
               }
-                              </ul>
-                            `
+                          </ul>
+                        `
               : html`<p>No members found.</p>`
           }
-                    </section>
-                  `;
+                  </div>
+                </div>
+              `;
         })}
             `
-        : html`<p>No households found.</p>`
+        : html`
+              <div class="empty">
+                <h2>No households found</h2>
+                <p>Create a household to see it appear here.</p>
+              </div>
+            `
     }
 
-          <a href="/">Back to homepage</a>
+            <a class="back-link" href="/">Back to homepage</a>
+          </div>
         </body>
       </html>
     `,

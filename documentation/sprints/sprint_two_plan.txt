@@ -1,0 +1,16 @@
+Sprint Two Plan:
+(highest up is priority/order)
+
+- Sam will work on finishing login/signup functionality, getting user tokens set up
+- Andrew will work on the create/join/leave household functionality on the homepage
+- Rhys will work on the member and manager household views on the homepage
+- Blake will work on the manager view on the household page
+- Dena will work on the member view on the household page 
+
+- Invites have been changed from sprint 1 to sprint 2, they are now a join code
+- Deleting households should be done when there are no users in the household left
+
+- If there is extra time, styling will be completed on all webpages
+- If there is extra time, more functionality may be completed such as:
+    - Disallowing certain members from viewing certain accounts
+    - Having more than one manager (managers can promote other members to manager)

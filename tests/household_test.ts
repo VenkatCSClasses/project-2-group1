@@ -1,3 +1,5 @@
+// Assisted-by: GitHub Copilot:GPT-5.3-Codex [apply_patch] [get_errors]
+
 import { assert, assertEquals } from "@std/assert";
 import householdApp from "../routes/household.ts";
 import { db, runMigrations } from "../database/knex.ts";

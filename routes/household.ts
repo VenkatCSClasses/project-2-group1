@@ -1,3 +1,5 @@
+// Assisted-by: GitHub Copilot:GPT-5.3-Codex [apply_patch] [get_errors]
+
 import { Hono } from "@hono/hono";
 import { db } from "../database/knex.ts";
 
@@ -54,17 +56,29 @@ const decoder = new TextDecoder();
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function parseOptionalHouseholdId(value: string | null) {
+function parseOptionalInteger(value: string | null) {
   if (value === null) {
     return null;
   }
 
-  const householdId = Number(value);
-  if (!Number.isInteger(householdId)) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed)) {
     return null;
   }
 
-  return householdId;
+  return parsed;
+}
+
+function parseOptionalHouseholdId(value: string | null) {
+  return parseOptionalInteger(value);
+}
+
+function parseOptionalUserId(value: string | null) {
+  return parseOptionalInteger(value);
+}
+
+function normalizeRole(role: string) {
+  return role.trim().toLowerCase();
 }
 
 function makeJoinCode() {
@@ -86,6 +100,47 @@ function mapHousehold(row: {
     updated_at: String(row.updated_at),
   };
 }
+
+app.get("/context", async (c) => {
+  const householdId = parseOptionalHouseholdId(c.req.query("household_id") ?? null);
+  const userId = parseOptionalUserId(c.req.query("user_id") ?? null);
+
+  if (householdId === null || userId === null) {
+    return c.json({ error: "household_id and user_id query parameters are required" }, 400);
+  }
+
+  const householdRow = await db("household")
+    .select("household_id", "household_name", "join_code", "created_at", "updated_at")
+    .where({ household_id: householdId })
+    .first();
+
+  if (!householdRow) {
+    return c.json({ error: "Household not found" }, 404);
+  }
+
+  const membership = await db("household_membership as hm")
+    .join("user_account as ua", "ua.user_id", "hm.user_id")
+    .select("ua.user_id", "ua.username", "hm.role", "hm.household_id")
+    .where({ "hm.household_id": householdId, "hm.user_id": userId })
+    .first();
+
+  if (!membership) {
+    return c.json({ error: "User is not a member of this household" }, 403);
+  }
+
+  const normalizedRole = normalizeRole(String(membership.role));
+
+  return c.json({
+    household: mapHousehold(householdRow),
+    user: {
+      user_id: membership.user_id,
+      username: membership.username,
+      role: membership.role,
+      is_manager: normalizedRole === "manager",
+      is_member: normalizedRole === "member",
+    },
+  });
+});
 
 app.get("/members", async (c) => {
   const householdId = parseOptionalHouseholdId(c.req.query("household_id") ?? null);
@@ -198,15 +253,6 @@ app.delete("/members/:memberId", async (c) => {
   await db("household_membership")
     .where({ user_id: memberId, household_id: householdId })
     .del();
-
-  const hasOtherMemberships = await db("household_membership")
-    .select("user_id")
-    .where({ user_id: memberId })
-    .first();
-
-  if (!hasOtherMemberships) {
-    await db("user_account").where({ user_id: memberId }).del();
-  }
 
   return c.json({
     deleted: {

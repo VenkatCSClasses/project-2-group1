@@ -20,6 +20,13 @@ const migrationConfig: Knex.MigratorConfig = {
 export const db = knex(config);
 const encoder = new TextEncoder();
 
+type SampleMemberSeed = {
+  preferredUserId: number;
+  username: string;
+  legacyUsername: string;
+  role: string;
+};
+
 export async function runMigrations() {
   await db.migrate.latest(migrationConfig);
 }
@@ -37,16 +44,16 @@ export async function ensureSampleHousehold() {
     })
     .returning(["household_id", "household_name", "join_code"]))[0];
 
-  const sampleMembers = [
-    { username: "Andrew", legacyUsername: "andrew.testhouse", role: "Manager" },
-    { username: "Sam", legacyUsername: "sam.testhouse", role: "Manager" },
-    { username: "Blake", legacyUsername: "blake.testhouse", role: "Member" },
-    { username: "Dena", legacyUsername: "dena.testhouse", role: "Member" },
-    { username: "Rhys", legacyUsername: "rhys.testhouse", role: "Member" },
+  const sampleMembers: SampleMemberSeed[] = [
+    { preferredUserId: 1, username: "Andrew", legacyUsername: "andrew.testhouse", role: "Manager" },
+    { preferredUserId: 2, username: "Sam", legacyUsername: "sam.testhouse", role: "Manager" },
+    { preferredUserId: 3, username: "Blake", legacyUsername: "blake.testhouse", role: "Member" },
+    { preferredUserId: 4, username: "Dena", legacyUsername: "dena.testhouse", role: "Member" },
+    { preferredUserId: 5, username: "Rhys", legacyUsername: "rhys.testhouse", role: "Member" },
   ];
 
   for (const member of sampleMembers) {
-    const existingUser = await db("user_account")
+    let existingUser = await db("user_account")
       .select("user_id")
       .where({ username: member.username })
       .first();
@@ -62,16 +69,45 @@ export async function ensureSampleHousehold() {
       await db("user_account")
         .where({ user_id: existingLegacyUser.user_id })
         .update({ username: member.username });
+
+      existingUser = { user_id: existingLegacyUser.user_id };
     }
 
-    const user = existingUser ?? existingLegacyUser ?? (await db("user_account")
-      .insert({
-        username: member.username,
-        public_key: encoder.encode(`${member.username}-public-key`),
-        password_salt: encoder.encode(`${member.username}-salt`),
-        password_hash: encoder.encode(`${member.username}-hash`),
-      })
-      .returning(["user_id"]))[0];
+    let user = existingUser ?? existingLegacyUser;
+
+    if (!user) {
+      user = await db.transaction(async (trx) => {
+        const preferredIdRow = await trx("user_account")
+          .select("user_id")
+          .where({ user_id: member.preferredUserId })
+          .first();
+
+        if (!preferredIdRow) {
+          const [createdPreferred] = await trx("user_account")
+            .insert({
+              user_id: member.preferredUserId,
+              username: member.username,
+              public_key: encoder.encode(`${member.username}-public-key`),
+              password_salt: encoder.encode(`${member.username}-salt`),
+              password_hash: encoder.encode(`${member.username}-hash`),
+            })
+            .returning(["user_id"]);
+
+          return createdPreferred;
+        }
+
+        const [created] = await trx("user_account")
+          .insert({
+            username: member.username,
+            public_key: encoder.encode(`${member.username}-public-key`),
+            password_salt: encoder.encode(`${member.username}-salt`),
+            password_hash: encoder.encode(`${member.username}-hash`),
+          })
+          .returning(["user_id"]);
+
+        return created;
+      });
+    }
 
     await db("household_membership")
       .insert({
@@ -82,6 +118,14 @@ export async function ensureSampleHousehold() {
       .onConflict(["user_id", "household_id"])
       .merge({ role: member.role });
   }
+
+  await db.raw(`
+    SELECT setval(
+      pg_get_serial_sequence('user_account', 'user_id'),
+      COALESCE((SELECT MAX(user_id) FROM user_account), 1),
+      true
+    )
+  `);
 
   return household;
 }

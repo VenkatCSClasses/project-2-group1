@@ -1,5 +1,6 @@
 import { Hono } from "@hono/hono";
 import { html } from "@hono/hono/html";
+import { db } from "../database/knex.ts";
 
 const app = new Hono();
 
@@ -74,24 +75,90 @@ app.post("/leave-household", async (c) => {
     `,
   )
 });
+
 // Route to view household information (members, managers, etc.)
-app.get("/household-view", (c) => {
+app.get("/household-view", async (c) => {
+  const households = await db("household").select("*");
+
+  const memberships = await db("household_membership")
+    .join("user_account", "household_membership.user_id", "user_account.user_id")
+    .select(
+      "household_membership.household_id",
+      "household_membership.role",
+      "user_account.user_id",
+      "user_account.username",
+    );
+
   return c.html(
     html`
       <html>
         <body>
           <h1>Household View</h1>
 
-          <h2>Households</h2>
-          <p>Household list will go here</p>
+          ${
+      households.length > 0
+        ? html`
+              ${households.map((household: {
+          household_id: number;
+          household_name: string;
+          join_code: number;
+        }) => {
+          const householdMembers = memberships.filter((m: {
+            household_id: number;
+            role: string;
+            user_id: number;
+            username: string;
+          }) => m.household_id === household.household_id);
 
-          <h2>Members</h2>
-          <p>Member list will go here</p>
+          const managers = householdMembers.filter((m: { role: string }) =>
+            m.role === "manager"
+          );
+          const members = householdMembers.filter((m: { role: string }) =>
+            m.role === "member"
+          );
 
-          <h2>Managers</h2>
-          <p>Manager list will go here</p>
+          return html`
+                    <section style="margin-bottom: 2rem;">
+                      <h2>${household.household_name}</h2>
+                      <p>Join Code: ${household.join_code}</p>
 
-          <a href="/main-page">Back to homepage</a>
+                      <h3>Managers</h3>
+                      ${
+            managers.length > 0
+              ? html`
+                              <ul>
+                                ${
+                managers.map((manager: { username: string }) =>
+                  html`<li>${manager.username}</li>`
+                )
+              }
+                              </ul>
+                            `
+              : html`<p>No managers found.</p>`
+          }
+
+                      <h3>Members</h3>
+                      ${
+            members.length > 0
+              ? html`
+                              <ul>
+                                ${
+                members.map((member: { username: string }) =>
+                  html`<li>${member.username}</li>`
+                )
+              }
+                              </ul>
+                            `
+              : html`<p>No members found.</p>`
+          }
+                    </section>
+                  `;
+        })}
+            `
+        : html`<p>No households found.</p>`
+    }
+
+          <a href="/">Back to homepage</a>
         </body>
       </html>
     `,

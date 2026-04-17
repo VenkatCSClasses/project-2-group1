@@ -95,97 +95,98 @@ app.get("/household-view", async (c: Context) => {
         <head>
           <title>Household View</title>
           <style>
-            body {
-              font-family: Arial, sans-serif;
-              background: linear-gradient(to bottom right, #fdf2f8, #f3e8ff, #ede9fe);
-              color: #3b0764;
-              margin: 0;
-              padding: 40px 20px;
-            }
+          body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom right, #ecfdf5, #d1fae5, #bbf7d0);
+            color: #064e3b;
+            margin: 0;
+            padding: 40px 20px;
+          }
 
-            .container {
-              max-width: 900px;
-              margin: 0 auto;
-            }
+          .container {
+            max-width: 900px;
+            margin: 0 auto;
+          }
 
-            h1 {
-              text-align: center;
-              font-size: 3rem;
-              margin-bottom: 10px;
-            }
+          h1 {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: #065f46;
+          }
 
-            .subtitle {
-              text-align: center;
-              font-size: 1.1rem;
-              margin-bottom: 35px;
-              color: #6b21a8;
-            }
+          .subtitle {
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 35px;
+            color: #047857;
+          }
 
-            .card {
-              background: white;
-              border-radius: 20px;
-              padding: 24px;
-              margin-bottom: 24px;
-              box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-              border: 1px solid #f5d0fe;
-            }
+          .card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #bbf7d0;
+          }
 
-            h2 {
-              margin-top: 0;
-              color: #7e22ce;
-            }
+          h2 {
+            margin-top: 0;
+            color: #047857;
+          }
 
-            h3 {
-              margin-bottom: 8px;
-              color: #9333ea;
-            }
+          h3 {
+            margin-bottom: 8px;
+            color: #059669;
+          }
 
-            .join-code {
-              display: inline-block;
-              background: #fce7f3;
-              color: #9d174d;
-              padding: 8px 14px;
-              border-radius: 999px;
-              font-size: 0.95rem;
-              margin-bottom: 16px;
-            }
+          .join-code {
+            display: inline-block;
+            background: #d1fae5;
+            color: #065f46;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 0.95rem;
+            margin-bottom: 16px;
+          }
 
-            ul {
-              padding-left: 20px;
-            }
+          ul {
+            padding-left: 20px;
+          }
 
-            li {
-              margin-bottom: 6px;
-            }
+          li {
+            margin-bottom: 6px;
+          }
 
-            .empty {
-              background: white;
-              border-radius: 18px;
-              padding: 30px;
-              text-align: center;
-              box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-              border: 1px solid #f5d0fe;
-            }
+          .empty {
+            background: white;
+            border-radius: 18px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #bbf7d0;
+          }
 
-            .back-link {
-              display: inline-block;
-              margin-top: 20px;
-              text-decoration: none;
-              background: #c084fc;
-              color: white;
-              padding: 12px 18px;
-              border-radius: 12px;
-              font-weight: bold;
-            }
+          .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            text-decoration: none;
+            background: #34d399;
+            color: #064e3b;
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-weight: bold;
+          }
 
-            .back-link:hover {
-              background: #a855f7;
-            }
+          .back-link:hover {
+            background: #10b981;
+          }
 
-            .section-label {
-              margin-top: 18px;
-            }
-          </style>
+          .section-label {
+            margin-top: 18px;
+          }
+        </style>
         </head>
         <body>
           <div class="container">
@@ -267,6 +268,43 @@ app.get("/household-view", async (c: Context) => {
       </html>
     `,
   );
+});
+
+// test for household view route
+app.get("/seed-test", async (c: Context) => {
+  // create a user
+  const [user] = await db("user_account")
+    .insert({
+      username: "test_user",
+      public_key: new Uint8Array([1]),
+      password_salt: new Uint8Array([1]),
+      encrypted_private_key: new Uint8Array([1]),
+    })
+    .returning("user_id");
+
+  const userId = user.user_id;
+
+  // create a household
+  const [household] = await db("household")
+    .insert({
+      household_name: "Test Household",
+      join_code: 123456,
+    })
+    .returning("household_id");
+
+  const householdId = household.household_id;
+
+  // create membership
+  await db("household_membership").insert({
+    user_id: userId,
+    household_id: householdId,
+    role: "Manager",
+  });
+
+  return c.html(html`
+    <p>Test data created!</p>
+    <a href="/api/homepage/household-view">Go to Household View</a>
+  `);
 });
 
 export default app;

@@ -184,6 +184,9 @@
       <div class="window-body">
         <article class="household-card" aria-label="Household placeholder">
           <h2 id="household-name" class="section-title">Loading household...</h2>
+          <p id="viewer-context" class="viewer-context" role="status" aria-live="polite">
+            Loading user context...
+          </p>
           <div class="top-grid">
             <section aria-label="Household overview" class="section-panel overview" >
               <h3 class="section-title">Household Overview</h3>
@@ -200,6 +203,8 @@
                 <dt>Member Count:</dt>
                 <dd id="household-member-count">0</dd>
               </dl>
+              <p id="join-code-status" class="status" role="status" aria-live="polite"></p>
+
             </section>
 
             <section class="members section-panel" aria-label="Household members">
@@ -238,13 +243,58 @@
       let currentHouseholdId = null;
 
       function escapeHtml(value) {
-        return value
+        return String(value)
           .replaceAll("&", "&amp;")
           .replaceAll("<", "&lt;")
           .replaceAll(">", "&gt;")
           .replaceAll('"', "&quot;")
           .replaceAll("'", "&#39;");
       }
+
+      function parsePositiveInteger(value) {
+        if (value === null || value === "") {
+          return null;
+        }
+
+        const parsed = Number(value);
+        if (!Number.isInteger(parsed) || parsed <= 0) {
+          return null;
+        }
+
+        return parsed;
+      }
+
+      function readParam(searchParams, keys) {
+        for (const key of keys) {
+          const value = searchParams.get(key);
+          if (value !== null && value !== "") {
+            return value;
+          }
+        }
+
+        return null;
+      }
+
+      function getPageContextIds() {
+        const searchParams = new URLSearchParams(window.location.search);
+
+        const householdRaw = readParam(searchParams, [
+          "householdId",
+          "household_id",
+          "househildId",
+          "househild_id",
+        ]);
+        const userRaw = readParam(searchParams, ["userId", "user_id"]);
+
+        return {
+          householdId: parsePositiveInteger(householdRaw),
+          userId: parsePositiveInteger(userRaw),
+        };
+      }
+
+      function applyRoleDisplayState() {
+        accountsForm.style.display = "grid";
+        managerOnlyNoteEl.textContent = "";
 
       function renderAccounts(accounts) {
         if (!accounts.length) {
@@ -382,41 +432,70 @@
         return date.toLocaleString();
       }
 
-      function renderHousehold(household) {
-        if (!household) {
+      function renderHouseholdContext(context) {
+        if (!context || !context.household || !context.user) {
           householdNameEl.textContent = "No household found";
           householdIdEl.textContent = "-";
+          householdJoinCodeEl.textContent = "-";
+          copyJoinCodeBtn.disabled = true;
+          joinCodeStatusEl.textContent = "";
           householdCreatedEl.textContent = "-";
           householdCreatedEl.setAttribute("datetime", "");
           householdUpdatedEl.textContent = "-";
           householdUpdatedEl.setAttribute("datetime", "");
           currentHouseholdId = null;
+          viewerContextEl.className = "viewer-context";
+          viewerContextEl.textContent = "Could not load user context.";
+          applyRoleDisplayState();
           return;
         }
 
+        const household = context.household;
+        const user = context.user;
+        const role = String(user.role || "member").toLowerCase();
+        const isManager = role === "manager" || user.is_manager === true;
+
         currentHouseholdId = household.household_id;
+        currentUserId = user.user_id;
         householdNameEl.textContent = household.household_name;
         householdIdEl.textContent = String(household.household_id);
         householdJoinCodeEl.textContent = String(household.join_code);
+        copyJoinCodeBtn.disabled = false;
+        joinCodeStatusEl.textContent = "";
         householdCreatedEl.textContent = formatDate(household.created_at);
         householdCreatedEl.setAttribute("datetime", household.created_at);
         householdUpdatedEl.textContent = formatDate(household.updated_at);
         householdUpdatedEl.setAttribute("datetime", household.updated_at);
+        viewerContextEl.className = `viewer-context ${isManager ? "manager" : "member"}`;
+        viewerContextEl.textContent = `Viewing as ${user.username} - ${isManager ? "Manager" : "Member"}`;
+        applyRoleDisplayState();
       }
 
-      async function loadHousehold() {
+      async function loadHouseholdContext() {
+        const ids = getPageContextIds();
+
+        if (ids.householdId === null || ids.userId === null) {
+          renderHouseholdContext(null);
+          accountsOutput.textContent = "Missing required query params: householdId and userId.";
+          membersOutput.innerHTML = "<li>Missing required query params: householdId and userId.</li>";
+          return;
+        }
+
         try {
-          const response = await fetch("/api/household");
+          const response = await fetch(
+            `/api/household/context?household_id=${ids.householdId}&user_id=${ids.userId}`,
+          );
 
           if (!response.ok) {
-            throw new Error("Failed to load households");
+            throw new Error("Failed to load household context");
           }
 
           const payload = await response.json();
-          const households = Array.isArray(payload.data) ? payload.data : [];
-          renderHousehold(households[0] || null);
+          renderHouseholdContext(payload);
         } catch (_error) {
-          renderHousehold(null);
+          renderHouseholdContext(null);
+          accountsOutput.textContent = "Unable to load household context right now.";
+          membersOutput.innerHTML = "<li>Unable to load household context right now.</li>";
         }
       }
 

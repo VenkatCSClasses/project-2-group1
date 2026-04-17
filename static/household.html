@@ -227,8 +227,8 @@
                 <dt>Household ID:</dt>
                 <dd id="household-id">-</dd>
 
-                <dt>Join Code:</dt>
-                <dd>
+                <dt class="manager-view">Join Code:</dt>
+                <dd class="manager-view">
                   <span class="join-code-wrap">
                     <span id="household-join-code">-</span>
                     <button id="copy-join-code-btn" class="join-code-copy-btn" type="button" disabled>
@@ -261,7 +261,7 @@
 
           <section class="accounts section-panel" aria-label="Account placeholders">
             <h3 class="section-title">Shared Vault Passwords</h3>
-            <form id="accounts-form" class="accounts-form" aria-label="Add streaming account">
+            <form id="accounts-form" class="accounts-form" class="manager-view" aria-label="Add streaming account">
               <label for="service-name">Service</label>
               <input id="service-name" name="serviceName" type="text" placeholder="Netflix" required autocomplete="organization">
 
@@ -516,6 +516,7 @@
         const role = String(user.role || "member").toLowerCase();
         const isManager = role === "manager" || user.is_manager === true;
 
+        
         currentHouseholdId = household.household_id;
         currentUserId = user.user_id;
         householdNameEl.textContent = household.household_name;
@@ -529,6 +530,9 @@
         householdUpdatedEl.setAttribute("datetime", household.updated_at);
         viewerContextEl.className = `viewer-context ${isManager ? "manager" : "member"}`;
         viewerContextEl.textContent = `Viewing as ${user.username} - ${isManager ? "Manager" : "Member"}`;
+        document.querySelectorAll(".manager-view").forEach((el) => {
+          el.style.display = isManager ? "block" : "none";
+        });
         applyRoleDisplayState();
       }
 

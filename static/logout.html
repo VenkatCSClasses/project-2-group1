@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- INSERT_HEAD_HTML -->
+    <title>Document</title>
+  </head>
+  <body>
+    <div class="window">
+      <div class="title-bar">
+        <div class="title-bar-text">
+          Log Out
+        </div>
+      </div>
+      <div class="window-body">
+        <p hx-get="/api/account/logout" hx-trigger="load" hx-swap="outerHTML">
+          Logging out…
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

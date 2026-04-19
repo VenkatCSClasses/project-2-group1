@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- INSERT_HEAD_HTML -->
+    <title>SubSeer - Create Account</title>
+  </head>
+  <body>
+    <div class="window">
+      <div class="title-bar">
+        <div class="title-bar-text">
+          Sign Up
+        </div>
+      </div>
+      <div class="window-body">
+        <div id="signup-container">
+          <p hx-get="/api/account/signup" hx-trigger="load" hx-swap="outerHTML">
+            Please enter your details below:
+          </p>
+          <form
+            class="login-form"
+            hx-put="/api/account/signup"
+            hx-swap="outerHTML"
+            hx-target="#signup-container"
+          >
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required>
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+            <button type="submit">Create Account</button>
+          </form>
+          <p>
+            Note: Please use a strong password that you can remember (like a
+            collection of words or a phrase you know). Your account password is
+            used to encrypt the other credentials in your account. If the
+            account password is weak, your accounts can be easily compromised by
+            an attacker. If you forget your account password, you will need to
+            create a new account.
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -10,8 +10,8 @@
                 <h1>Home Page</h1>
                 <!--Edit/view profile and logout buttons-->
             </header>
-            <section class="addHouseholds">
-                <h2>Add Households</h2>
+            <section class="modifyHouseholds">
+                <h2>Modify Households</h2>
                 <section class="createHousehold" aria-label="Create Household Form"></section>
                     <h3>Create New Household</h3>
                     <form hx-post="/api/homepage/create-household" hx-target="#responseCreate" hx-swap="innerHTML">
@@ -30,17 +30,16 @@
                     </form>
                     <div id="responseJoin"></div>
                 </section>
+                <section>
+                    <h3>Leave Household</h3>
+                    <div id="leaveDropdown" hx-get="/api/homepage/leave-dropdown" hx-trigger="load" hx-swap="innerHTML"></div> 
+                </section>
             </section>
-            <section class="currentHouseholds">
-                <h2>Current Households</h2>
-                <section class="managerHouseholds">
-                    <h3>Manager Households</h3>
-                    <div hx-get="/api/homepage/manager-households" hx-trigger="load" hx-swap="outerHTML"></div>
-                </section>
-                <section class="member-households">
-                    <h3>Member Households</h3>
-                    <div hx-get="/api/homepage/member-households" hx-trigger="load" hx-swap="outerHTML"></div>
-                </section>
+            <section class="householdView">
+                <h2>Household View</h2>
+                <div id="householdView">
+                    <a href="/api/homepage/household-view">Click to view households!</a>
+                </div>
             </section>
         </main>
 </html>

@@ -321,100 +321,8 @@ app.get("/household-view", async (c: Context) => {
     html`
       <html>
         <head>
+          <!-- INSERT_HEAD_HTML -->
           <title>Household View</title>
-          <style>
-          body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(to bottom right, #ecfdf5, #d1fae5, #bbf7d0);
-            color: #064e3b;
-            margin: 0;
-            padding: 40px 20px;
-          }
-
-          .container {
-            max-width: 900px;
-            margin: 0 auto;
-          }
-
-          h1 {
-            text-align: center;
-            font-size: 3rem;
-            margin-bottom: 10px;
-            color: #065f46;
-          }
-
-          .subtitle {
-            text-align: center;
-            font-size: 1.1rem;
-            margin-bottom: 35px;
-            color: #047857;
-          }
-
-          .card {
-            background: white;
-            border-radius: 20px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-            border: 1px solid #bbf7d0;
-          }
-
-          h2 {
-            margin-top: 0;
-            color: #047857;
-          }
-
-          h3 {
-            margin-bottom: 8px;
-            color: #059669;
-          }
-
-          .join-code {
-            display: inline-block;
-            background: #d1fae5;
-            color: #065f46;
-            padding: 8px 14px;
-            border-radius: 999px;
-            font-size: 0.95rem;
-            margin-bottom: 16px;
-          }
-
-          ul {
-            padding-left: 20px;
-          }
-
-          li {
-            margin-bottom: 6px;
-          }
-
-          .empty {
-            background: white;
-            border-radius: 18px;
-            padding: 30px;
-            text-align: center;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-            border: 1px solid #bbf7d0;
-          }
-
-          .back-link {
-            display: inline-block;
-            margin-top: 20px;
-            text-decoration: none;
-            background: #34d399;
-            color: #064e3b;
-            padding: 12px 18px;
-            border-radius: 12px;
-            font-weight: bold;
-          }
-
-          .back-link:hover {
-            background: #10b981;
-          }
-
-          .section-label {
-            margin-top: 18px;
-          }
-        </style>
         </head>
         <body>
           <div class="container">
@@ -497,6 +405,11 @@ app.get("/household-view", async (c: Context) => {
     `,
   );
 });
+
+
+//
+
+
 
 // test for household view route
 app.get("/seed-test", async (c: Context) => {

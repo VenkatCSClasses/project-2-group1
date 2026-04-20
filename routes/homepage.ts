@@ -114,17 +114,7 @@ app.get("/member-households", async (c: Context) => {
 
 // Route to join a household
 app.post("/join-household", async (c: Context) => {
-  // deno-lint-ignore no-explicit-any
-  const { loggedIn, userId } = await isLoggedIn(c as any);
-  if (!loggedIn || userId === undefined) {
-    return c.html(
-      html`
-        <script>
-          alert("Error: You must be logged in to join a household.")
-        </script>
-      `,
-    );
-  }
+
 
   const body = await c.req.parseBody();
 

@@ -73,7 +73,6 @@
       }
 
       .accounts-form {
-        display: grid;
         grid-template-columns: 1fr;
         gap: 7px;
         max-width: 460px;
@@ -146,6 +145,10 @@
         justify-content: space-between;
         align-items: center;
         gap: 8px;
+      }
+
+      .manager-view {
+        display: none;
       }
 
       .member-remove-btn {
@@ -227,8 +230,8 @@
                 <dt>Household ID:</dt>
                 <dd id="household-id">-</dd>
 
-                <dt class="manager-view">Join Code:</dt>
-                <dd class="manager-view">
+                <dt class="manager-view" hidden>Join Code:</dt>
+                <dd class="manager-view" hidden>
                   <span class="join-code-wrap">
                     <span id="household-join-code">-</span>
                     <button id="copy-join-code-btn" class="join-code-copy-btn" type="button" disabled>
@@ -261,7 +264,7 @@
 
           <section class="accounts section-panel" aria-label="Account placeholders">
             <h3 class="section-title">Shared Vault Passwords</h3>
-            <form id="accounts-form" class="accounts-form" class="manager-view" aria-label="Add streaming account">
+            <form id="accounts-form" class="accounts-form manager-view" aria-label="Add streaming account" hidden>
               <label for="service-name">Service</label>
               <input id="service-name" name="serviceName" type="text" placeholder="Netflix" required autocomplete="organization">
 
@@ -352,9 +355,14 @@
         };
       }
 
-      function applyRoleDisplayState() {
-        accountsForm.style.display = "grid";
-        managerOnlyNoteEl.textContent = "";
+      function applyRoleDisplayState(isManager) {
+        if (isManager) {
+          accountsForm.style.display = "grid";
+          managerOnlyNoteEl.textContent = "";
+        } else {
+          accountsForm.style.display = "none";
+          managerOnlyNoteEl.textContent = "Only household managers can add or remove accounts.";
+        }
       }
 
       function renderAccounts(accounts) {
@@ -380,7 +388,7 @@
                 </button>
               </td>
               <td>
-                <button type="button" class="account-delete-btn" data-account-id="${String(account.account_id)}">Delete</button>
+                <button type="button" class="account-delete-btn manager-view" data-account-id="${String(account.account_id)}">Delete</button>
               </td>
             </tr>
           `;
@@ -453,7 +461,7 @@
                   <span><strong>${escapeHtml(member.name)}</strong> - ${escapeHtml(member.role)}</span>
                   <button
                     type="button"
-                    class="member-remove-btn"
+                    class="member-remove-btn manager-view"
                     data-member-id="${String(member.member_id)}"
                   >
                     Remove
@@ -507,7 +515,7 @@
           currentHouseholdId = null;
           viewerContextEl.className = "viewer-context";
           viewerContextEl.textContent = "Could not load user context.";
-          applyRoleDisplayState();
+          applyRoleDisplayState(isManager);
           return;
         }
 
@@ -531,9 +539,9 @@
         viewerContextEl.className = `viewer-context ${isManager ? "manager" : "member"}`;
         viewerContextEl.textContent = `Viewing as ${user.username} - ${isManager ? "Manager" : "Member"}`;
         document.querySelectorAll(".manager-view").forEach((el) => {
-          el.style.display = isManager ? "block" : "none";
+          el.hidden = !isManager;
         });
-        applyRoleDisplayState();
+        applyRoleDisplayState(isManager);
       }
 
       async function loadHouseholdContext() {

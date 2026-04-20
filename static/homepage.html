@@ -20,7 +20,7 @@
                     <h3>Create New Household</h3>
                     <form hx-post="/api/homepage/create-household" hx-target="#responseCreate">
                         <label for="household-name" aria-label="Household Name">Create Household:</label>
-                        <input type="text" id="householdName" name="householdName" placeholder="Household Name" aria-placeholder="Input Household Name Here" >
+                        <input type="text" id="householdName" name="householdName" placeholder="Household Name" aria-placeholder="Household Name (Max 32 Chars)" >
                         <button type="submit" name="submit">Submit</button>
                         <div id="responseCreate"></div>
                     </form>
@@ -29,7 +29,7 @@
                 <section class="joinHousehold" aria-label="Join Household Form"></section>
                     <form hx-post="/api/homepage/join-household" hx-target="#responseJoin">
                         <label for="householdName">Join Household Via Code:</label>
-                        <input type="text" id="householdCode" name="householdCode" placeholder="Household Join Code" aria-placeholder="Input Household Join Code Here">
+                        <input type="text" id="householdCode" name="householdCode" placeholder="Household Join Code" aria-placeholder="Household Join Code">
                         <button type="submit" name="submit">Submit</button>
                     </form>
                     <div id="responseJoin"></div>

@@ -1,6 +1,6 @@
 {
   "imports": {
-    "@hono/hono": "jsr:@hono/hono@^4.12.14",
+    "@hono/hono": "jsr:@hono/hono@^4.12.11",
     "@std/assert": "jsr:@std/assert@^1.0.19",
     "@std/testing": "jsr:@std/testing@^1.0.17",
     "@types/pg": "npm:@types/pg@^8.20.0",
@@ -9,8 +9,8 @@
     "pg": "npm:pg@^8.20.0"
   },
   "tasks": {
-    "start": "deno run --watch --allow-net --ignore-env --allow-read=. main.ts",
-    "check": "deno fmt **/*.ts && deno test tests/*.ts",
+    "start": "deno run --watch --allow-net --allow-env --allow-read=. main.ts",
+    "check": "deno fmt **/*.ts && deno test --allow-net --allow-env --allow-read tests/*.ts",
     "migrate": "deno run --allow-net --allow-env --allow-read --allow-write migrate.ts"
   },
   "deploy": {

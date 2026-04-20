@@ -20,7 +20,7 @@ erDiagram
         timestamp created_at
         timestamp updated_at
         binary password_salt
-        binary encrypted_private_key
+        binary password_hash
     }
     %% User's secret key is generated from password
 
@@ -47,9 +47,4 @@ erDiagram
         binary encrypted_service_password
         timestamp created_at
         timestamp updated_at
-    }
-
-    may_login_nonce {
-        integer nonce PK
-        timestamp expires_at
     }

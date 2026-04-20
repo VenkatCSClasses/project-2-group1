@@ -99,7 +99,7 @@ app.post("/join-household", async (c: Context) => {
 
   // Insert new household membership connection
   // TODO: Implement actual user ID addition (for now it adds a user with id -1)
-  const userID: number = 2;
+  const userID: number = -1;
   const householdID: number = household.household_id;
 
   await db<HouseholdMembership>("household_membership")

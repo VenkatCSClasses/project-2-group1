@@ -2,19 +2,29 @@
 <html lang="en">
   <head>
     <!-- INSERT_HEAD_HTML -->
-    <title>Document</title>
+    <title>Log In to SubSeer</title>
   </head>
   <body>
     <div class="window">
       <div class="title-bar">
         <div class="title-bar-text">
-          Login
+          Log In
         </div>
       </div>
       <div class="window-body">
-        <p hx-get="/api/account/login" hx-trigger="load" hx-swap="outerHTML">
-          Loading…
-        </p>
+        <form
+          class="login-form"
+          hx-get="/api/account/login"
+          hx-trigger="load"
+          hx-swap="outerHTML"
+        >
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" disabled>
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" disabled>
+          <input type="hidden" name="nonce" value="${nonce}" />
+          <button type="submit" disabled>Login</button>
+        </form>
       </div>
     </div>
   </body>

@@ -1,5 +1,5 @@
 html {
-    background-color: #a8ea90ff;
+    background-color: rgb(162, 188, 153);
 }
 
 body {
@@ -24,17 +24,4 @@ h1,h2,h3,h4,h5,h6 {
     font-size-adjust: 0.2;
     margin: 0;
     margin-bottom: 5px;
-}
-
-.login-form input {
-    display: block;
-    margin-bottom: 10px;
-    width: 100%;
-}
-
-.login-form button {
-    margin-top: 10px;
-    margin-left: auto;
-    margin-right: auto;
-    display: block;
 }

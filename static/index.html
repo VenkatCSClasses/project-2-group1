@@ -1,44 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <script
-      src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"
-      defer
-    ></script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SubSeer Launcher</title>
-    <style>
-      body {
-        font-family: sans-serif;
-        max-width: 720px;
-        margin: 32px auto;
-        padding: 0 16px;
-      }
-
-      .launcher {
-        margin-top: 18px;
-        padding: 14px;
-        border: 1px solid #bdbdbd;
-        border-radius: 6px;
-      }
-
-      .field {
-        display: grid;
-        gap: 4px;
-        margin-bottom: 10px;
-      }
-
-      input {
-        padding: 8px;
-      }
-
-      .actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 10px;
-      }
-    </style>
+    <!-- INSERT_HEAD_HTML -->
+    <title>SubSeer</title>
   </head>
   <body>
     <h1>SubSeer</h1>
@@ -60,26 +24,44 @@
             placeholder="1"
           >
         </div>
-
-        <div class="field">
-          <label for="userId">User ID</label>
-          <input
-            id="userId"
-            name="userId"
-            type="number"
-            min="1"
-            required
-            placeholder="1"
-          >
-        </div>
-
-        <div class="actions">
-          <button type="submit">Launch Household View</button>
-          <button type="button" onclick="window.location.href='/static/household.html'">
-            Open Without Params
+      </div>
+      <div class="window-body">
+        <h1>SubSeer</h1>
+        <h2>The Household Account Manager</h2>
+        <p>
+          SubSeer is a website that allows users to create and join
+          ‘households’, being able to add and access shared account information.
+          There are two levels of users in each household: managers and members.
+          Managers are able to delete the household, add/remove members,
+          promote/demote managers, add/edit/remove accounts, and review account
+          requests. They can also remove members from being able to view account
+          credentials. Members are able to create requests for new accounts to
+          be stored/created, and they can view account information for ones they
+          have access to.
+        </p>
+        <p>
+          This website will be primarily used by families/roommates who share
+          different accounts and want one localized place to store account
+          information. It will streamline the communication between members of
+          those groups by allowing everyone to see account information in one
+          place, instead of having to ask around for different credentials. If
+          account credentials are changed for a subscription, all the managers
+          have to do is just update the subscription on SubSeer, then the
+          members with valid permissions can see the new updated account
+          credentials, instead of having to pester others to find them out.
+        </p>
+        <a href="/login">
+          <button class="full-width">
+            Log In
           </button>
-        </div>
-      </form>
-    </section>
+        </a>
+        <br><br>
+        <a href="/login">
+          <button class="full-width">
+            Sign Up
+          </button>
+        </a>
+      </div>
+    </div>
   </body>
 </html>

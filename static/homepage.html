@@ -1,10 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="/static/selfcsp/98.css" />
-        <link rel="stylesheet" href="/static/selfcsp/style_default.css" />
+        <!-- INSERT_HEAD_HTML -->
         <title>Home Page</title>
     </head>
     <body>
@@ -17,7 +14,7 @@
                 <h2>Add Households</h2>
                 <section class="createHousehold" aria-label="Create Household Form"></section>
                     <h3>Create New Household</h3>
-                    <form hx-post="/api/homepage/create-household" hx-target="#responseCreate">
+                    <form hx-post="/api/homepage/create-household" hx-target="#responseCreate" hx-swap="innerHTML">
                         <label for="household-name" aria-label="Household Name">Create Household:</label>
                         <input type="text" id="householdName" name="householdName" placeholder="Household Name" aria-placeholder="Household Name (Max 32 Chars)" >
                         <button type="submit" name="submit">Submit</button>
@@ -26,7 +23,7 @@
                 </section>
                     <h3>Join Household</h3>
                 <section class="joinHousehold" aria-label="Join Household Form"></section>
-                    <form hx-post="/api/homepage/join-household" hx-target="#responseJoin">
+                    <form hx-post="/api/homepage/join-household" hx-target="#responseJoin" hx-swap="innerHTML">
                         <label for="householdName">Join Household Via Code:</label>
                         <input type="text" id="householdCode" name="householdCode" placeholder="Household Join Code" aria-placeholder="Household Join Code">
                         <button type="submit" name="submit">Submit</button>

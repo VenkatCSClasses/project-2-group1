@@ -73,6 +73,7 @@
       }
 
       .accounts-form {
+        display: grid;
         grid-template-columns: 1fr;
         gap: 7px;
         max-width: 460px;
@@ -264,7 +265,7 @@
 
           <section class="accounts section-panel" aria-label="Account placeholders">
             <h3 class="section-title">Shared Vault Passwords</h3>
-            <form id="accounts-form" class="accounts-form manager-view" aria-label="Add streaming account" hidden>
+            <form id="accounts-form" class="accounts-form" aria-label="Add streaming account" >
               <label for="service-name">Service</label>
               <input id="service-name" name="serviceName" type="text" placeholder="Netflix" required autocomplete="organization">
 
@@ -356,13 +357,8 @@
       }
 
       function applyRoleDisplayState(isManager) {
-        if (isManager) {
-          accountsForm.style.display = "grid";
-          managerOnlyNoteEl.textContent = "";
-        } else {
-          accountsForm.style.display = "none";
-          managerOnlyNoteEl.textContent = "Only household managers can add or remove accounts.";
-        }
+        accountsForm.style.display = "grid";
+        managerOnlyNoteEl.textContent = "-"
       }
 
       function renderAccounts(accounts) {
@@ -515,7 +511,7 @@
           currentHouseholdId = null;
           viewerContextEl.className = "viewer-context";
           viewerContextEl.textContent = "Could not load user context.";
-          applyRoleDisplayState(isManager);
+          applyRoleDisplayState();
           return;
         }
 
@@ -541,7 +537,7 @@
         document.querySelectorAll(".manager-view").forEach((el) => {
           el.hidden = !isManager;
         });
-        applyRoleDisplayState(isManager);
+        applyRoleDisplayState();
       }
 
       async function loadHouseholdContext() {

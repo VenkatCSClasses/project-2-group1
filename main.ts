@@ -1,10 +1,12 @@
 import { Hono } from "@hono/hono";
+import type { Context } from "@hono/hono";
 import { cors } from "@hono/hono/cors";
 import { secureHeaders } from "@hono/hono/secure-headers";
 import { logger } from "@hono/hono/logger";
 import { trimTrailingSlash } from "@hono/hono/trailing-slash";
 import { showRoutes } from "@hono/hono/dev";
 import { serveStatic } from "@hono/hono/deno";
+import { setJWTCookie } from "./cryptography.ts";
 import accountRoutes from "./routes/account.ts";
 import householdRoutes from "./routes/household.ts";
 import { runMigrations } from "./database/knex.ts";
@@ -34,22 +36,7 @@ app.get("/homepage", serveStatic({ path: "./static/homepage.html" }));
 
 // Test endpoint for Blake to access homepage
 app.get("/test-blake-login", async (c) => {
-  const { sign } = await import("hono/jwt");
-  const { setCookie } = await import("hono/cookie");
-  
-  const secret = "subseer-secret-key-for-testing";
-  const payload = {
-    id: 1,
-    iss: "subseer",
-    exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24),
-  };
-  
-  const token = await sign(payload, secret, "HS512");
-  setCookie(c, "jwt", token, {
-    maxAge: 24 * 60 * 60,
-    path: "/",
-    sameSite: "Lax",
-  });
+  await setJWTCookie(1, c as Context);
   
   return c.redirect("/homepage");
 });

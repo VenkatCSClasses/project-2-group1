@@ -194,7 +194,7 @@ app.post("/members", async (c) => {
       username: body.name,
       public_key: encoder.encode("subseer-public-key"),
       password_salt: encoder.encode("subseer-salt"),
-      password_hash: encoder.encode("subseer-hash"),
+      encrypted_private_key: encoder.encode("subseer-private-key"),
     })
     .returning(["user_id"]);
 

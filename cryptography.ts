@@ -1,10 +1,7 @@
 import { Buffer } from "node:buffer";
-import { db } from "./database/knex.ts";
 import { Context } from "hono";
 import { sign, verify } from "hono/jwt";
 import { getCookie, setCookie } from "hono/cookie";
-import { CookieOptions } from "hono/utils/cookie";
-import { BlankEnv, BlankInput } from "hono/types";
 import { JWTPayload } from "hono/utils/jwt/types";
 
 // Some helper fns from mozilla examples converted to typescript
@@ -153,7 +150,7 @@ export async function generateAccountSecrets(password: string): Promise<{
   };
 }
 
-export async function getJWTSecret(): Promise<string> {
+export function getJWTSecret(): string {
   // For now, use the same hardcoded secret used in testing
   // TODO: In production, read from database or environment
   return "subseer-secret-key-for-testing";
@@ -173,10 +170,12 @@ export async function setJWTCookie(userId: number, c: Context): Promise<void> {
 
   const secret = await getJWTSecret();
   const token = await sign(payload, secret, "HS512");
+  const secure = new URL(c.req.url).protocol === "https:";
 
   setCookie(c, "jwt", token, {
     sameSite: "strict",
-    secure: true,
+    secure,
+    path: "/",
     maxAge: 60 * 60 * 24, // 1 day
   });
 }
@@ -198,7 +197,7 @@ export async function isLoggedIn(
       loggedIn: true,
       userId: verifyResult.id as number,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       loggedIn: false,
       userId: undefined,

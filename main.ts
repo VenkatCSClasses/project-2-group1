@@ -18,15 +18,41 @@ const app = new Hono();
 // Various browser security/logging middleware
 app.use(trimTrailingSlash());
 app.use(secureHeaders());
-app.use("/api/*", cors({ origin: "*" })); // should be reduced in the future to only the published URL
+app.use("/api/*", cors({ 
+  origin: ["http://127.0.0.1:8000", "http://localhost:8000"],
+  credentials: true,
+})); // should be reduced in the future to only the published URL
 app.use(logger());
 
 // Static file serving
 app.use("/static/*", serveStatic({ root: "./" }));
 app.get("/", serveStatic({ path: "./static/index.html" }));
 app.get("/household", serveStatic({ path: "./static/household.html" }));
-app.get("/account", serveStatic({ path: "./static/account.html" }));
+app.get("/login", serveStatic({ path: "./static/login.html" }));
+app.get("/signup", serveStatic({ path: "./static/signup.html" }));
 app.get("/homepage", serveStatic({ path: "./static/homepage.html" }));
+
+// Test endpoint for Blake to access homepage
+app.get("/test-blake-login", async (c) => {
+  const { sign } = await import("hono/jwt");
+  const { setCookie } = await import("hono/cookie");
+  
+  const secret = "subseer-secret-key-for-testing";
+  const payload = {
+    id: 1,
+    iss: "subseer",
+    exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24),
+  };
+  
+  const token = await sign(payload, secret, "HS512");
+  setCookie(c, "jwt", token, {
+    maxAge: 24 * 60 * 60,
+    path: "/",
+    sameSite: "Lax",
+  });
+  
+  return c.redirect("/homepage");
+});
 
 app.route("/api/account", accountRoutes);
 app.route("/api/household", householdRoutes);

@@ -1,6 +1,7 @@
 import { Hono, Context } from "@hono/hono";
 import { html } from "@hono/hono/html";
 import { db } from "../database/knex.ts";
+import { isLoggedIn } from "../cryptography.ts";
 
 const app = new Hono();
 
@@ -34,30 +35,101 @@ type User = {
 
 // Route to return manager household information
 app.get("/manager-households", async (c: Context) => {
-  let managerHTML: string = "test manager";
-  return c.html(
-    html`
-        <p>${managerHTML}</p>
-    `,
-  )
+  // deno-lint-ignore no-explicit-any
+  const { loggedIn, userId } = await isLoggedIn(c as any);
+  
+  if (!loggedIn || userId === undefined) {
+    return c.html(
+      html`<p>Not logged in</p>`
+    );
+  }
+
+  // Query households where user is a manager
+  const households = await db<Household>("household")
+    .join("household_membership", "household.household_id", "=", "household_membership.household_id")
+    .where("household_membership.user_id", userId)
+    .where("household_membership.role", "manager")
+    .select("household.household_id", "household.household_name", "household.join_code");
+  
+  if (households.length === 0) {
+    return c.html(
+      html`<p>No manager households</p>`
+    );
+  }
+
+  let managerHTML = `<ul>`;
+  for (const household of households) {
+    managerHTML += `<li>
+      <a href="/household?household_id=${household.household_id}&user_id=${userId}">
+        ${household.household_name} (Code: ${household.join_code})
+      </a>
+    </li>`;
+  }
+  managerHTML += `</ul>`;
+  
+  return c.html(managerHTML);
 });
 
 // Route to return member household information
 app.get("/member-households", async (c: Context) => {
-  let memberHTML: string = "test member";
-  return c.html(
-    html`
-        <p>${memberHTML}</p>
-    `,
-  )
+  // deno-lint-ignore no-explicit-any
+  const { loggedIn, userId } = await isLoggedIn(c as any);
+  
+  if (!loggedIn || userId === undefined) {
+    return c.html(
+      html`<p>Not logged in</p>`
+    );
+  }
+
+  try {
+    // Query households where user is a member
+    const households = await db<Household>("household")
+      .join("household_membership", "household.household_id", "=", "household_membership.household_id")
+      .where("household_membership.user_id", userId)
+      .where("household_membership.role", "member")
+      .select("household.household_id", "household.household_name", "household.join_code");
+    
+    if (households.length === 0) {
+      return c.html(
+        html`<p>No member households</p>`
+      );
+    }
+
+    let memberHTML = `<ul>`;
+    for (const household of households) {
+      memberHTML += `<li>
+        <a href="/household?household_id=${household.household_id}&user_id=${userId}">
+          ${household.household_name} (Code: ${household.join_code})
+        </a>
+      </li>`;
+    }
+    memberHTML += `</ul>`;
+    
+    return c.html(memberHTML);
+  } catch (error) {
+    console.error("Error in member-households:", error);
+    return c.html(`<p>Error: ${error}</p>`);
+  }
 });
 
 // Route to join a household
 app.post("/join-household", async (c: Context) => {
+  // deno-lint-ignore no-explicit-any
+  const { loggedIn, userId } = await isLoggedIn(c as any);
+  if (!loggedIn || userId === undefined) {
+    return c.html(
+      html`
+        <script>
+          alert("Error: You must be logged in to join a household.")
+        </script>
+      `,
+    );
+  }
+
   const body = await c.req.parseBody();
 
   // Parse input as a number
-  const householdCode = body["householdCode"]
+  const householdCode = body["householdCode"];
 
   // Ensure input is a string, not a file
   if (typeof householdCode !== "string"){
@@ -81,9 +153,11 @@ app.post("/join-household", async (c: Context) => {
     )
   }
 
+  const parsedJoinCode = Number.parseInt(householdCode.trim(), 10);
+
   // Check to see if code exists in database
   const household = await db<Household>("household")
-    .where({join_code: householdCode})
+    .where({ join_code: parsedJoinCode })
     .first();
   if (!household){
     return c.html(
@@ -95,11 +169,23 @@ app.post("/join-household", async (c: Context) => {
     )
   }
 
-  // TODO: Ensure membership connection hasn't already been made (currently overwrites manager or throws error)
+  // Avoid duplicate memberships for the same user and household.
+  const existingMembership = await db<HouseholdMembership>("household_membership")
+    .where({ user_id: userId, household_id: household.household_id })
+    .first();
+
+  if (existingMembership) {
+    return c.html(
+      html`
+        <script>
+          alert("You are already a member of this household.")
+        </script>
+      `,
+    );
+  }
 
   // Insert new household membership connection
-  // TODO: Implement actual user ID addition (for now it adds a user with id -1)
-  const userID: number = -1;
+  const userID: number = userId;
   const householdID: number = household.household_id;
 
   await db<HouseholdMembership>("household_membership")
@@ -188,8 +274,8 @@ app.post("/create-household", async (c: Context) => {
 });
 
 // Route to attempt to leave a household
-app.post("/leave-household", async (c: Context) => {
-  let leaveHTML: string = "";
+app.post("/leave-household", (c: Context) => {
+  const leaveHTML: string = "";
   return c.html(
     html`
         <p>${leaveHTML}</p>

@@ -5,24 +5,10 @@
     <title>SubSeer</title>
   </head>
   <body>
-    <h1>SubSeer</h1>
-    <button hx-get="/api/account" hx-swap="outerHTML">
-      Make request
-    </button>
-
-    <section class="launcher" aria-label="Household page launcher">
-      <h2>Open Household Page</h2>
-      <form method="get" action="/static/household.html">
-        <div class="field">
-          <label for="householdId">Household ID</label>
-          <input
-            id="householdId"
-            name="householdId"
-            type="number"
-            min="1"
-            required
-            placeholder="1"
-          >
+    <div class="window">
+      <div class="title-bar">
+        <div class="title-bar-text">
+          SubSeer Introduction
         </div>
       </div>
       <div class="window-body">

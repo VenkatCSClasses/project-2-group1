@@ -1,10 +1,12 @@
 import { Hono } from "@hono/hono";
+import type { Context } from "@hono/hono";
 import { cors } from "@hono/hono/cors";
 import { secureHeaders } from "@hono/hono/secure-headers";
 import { logger } from "@hono/hono/logger";
 import { trimTrailingSlash } from "@hono/hono/trailing-slash";
 import { showRoutes } from "@hono/hono/dev";
 import { serveStatic } from "@hono/hono/deno";
+import { setJWTCookie } from "./cryptography.ts";
 import accountRoutes from "./routes/account.ts";
 import householdRoutes from "./routes/household.ts";
 import { runMigrations } from "./database/knex.ts";
@@ -18,15 +20,26 @@ const app = new Hono();
 // Various browser security/logging middleware
 app.use(trimTrailingSlash());
 app.use(secureHeaders());
-app.use("/api/*", cors({ origin: "*" })); // should be reduced in the future to only the published URL
+app.use("/api/*", cors({ 
+  origin: ["http://127.0.0.1:8000", "http://localhost:8000"],
+  credentials: true,
+})); // should be reduced in the future to only the published URL
 app.use(logger());
 
 // Static file serving
 app.use("/static/*", serveStatic({ root: "./" }));
 app.get("/", serveStatic({ path: "./static/index.html" }));
 app.get("/household", serveStatic({ path: "./static/household.html" }));
-app.get("/account", serveStatic({ path: "./static/account.html" }));
+app.get("/login", serveStatic({ path: "./static/login.html" }));
+app.get("/signup", serveStatic({ path: "./static/signup.html" }));
 app.get("/homepage", serveStatic({ path: "./static/homepage.html" }));
+
+// Test endpoint for Blake to access homepage
+app.get("/test-blake-login", async (c) => {
+  await setJWTCookie(1, c as Context);
+  
+  return c.redirect("/homepage");
+});
 
 app.route("/api/account", accountRoutes);
 app.route("/api/household", householdRoutes);

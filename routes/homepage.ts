@@ -84,11 +84,7 @@ app.get("/leave-dropdown", async (c: Context) => {
     }
   }
 
-  return c.html(
-    html`
-      ${dropdownHTML}
-    `
-  ),
+  return c.html(dropdownHTML);
 });
 
 // Route to join a household

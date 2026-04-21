@@ -7,6 +7,7 @@ import { trimTrailingSlash } from "@hono/hono/trailing-slash";
 import { showRoutes } from "@hono/hono/dev";
 import { serveStatic } from "@hono/hono/deno";
 import { setJWTCookie } from "./cryptography.ts";
+import { db } from "./database/knex.ts";
 import accountRoutes from "./routes/account.ts";
 import householdRoutes from "./routes/household.ts";
 import { runMigrations } from "./database/knex.ts";
@@ -36,7 +37,52 @@ app.get("/homepage", serveStatic({ path: "./static/homepage.html" }));
 
 // Test endpoint for Blake to access homepage
 app.get("/test-blake-login", async (c) => {
-  await setJWTCookie(1, c as Context);
+  const blakeUsername = "blake";
+  const existingUser = await db("user_account")
+    .select("user_id")
+    .where({ username: blakeUsername })
+    .first();
+
+  const createdUsers = existingUser ? [] : await db("user_account")
+    .insert({
+      username: blakeUsername,
+      public_key: new Uint8Array(),
+      password_salt: new Uint8Array(),
+      encrypted_private_key: new Uint8Array(),
+    })
+    .returning(["user_id"]);
+
+  const userId = existingUser?.user_id ?? createdUsers[0].user_id;
+
+  const dummyJoinCode = 111111;
+  const existingHousehold = await db("household")
+    .select("household_id")
+    .where({ join_code: dummyJoinCode })
+    .first();
+
+  const createdHouseholds = existingHousehold ? [] : await db("household")
+    .insert({
+      household_name: "Blake Test Household",
+      join_code: dummyJoinCode,
+    })
+    .returning(["household_id"]);
+
+  const householdId = existingHousehold?.household_id ?? createdHouseholds[0].household_id;
+
+  const existingMembership = await db("household_membership")
+    .select("user_id")
+    .where({ user_id: userId, household_id: householdId })
+    .first();
+
+  if (!existingMembership) {
+    await db("household_membership").insert({
+      user_id: userId,
+      household_id: householdId,
+      role: "Manager",
+    });
+  }
+
+  await setJWTCookie(userId, c as Context);
   
   return c.redirect("/homepage");
 });

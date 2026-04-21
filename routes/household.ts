@@ -2,6 +2,7 @@
 
 import { Hono } from "@hono/hono";
 import { db } from "../database/knex.ts";
+import { isLoggedIn, unlockKey } from "../cryptography.ts";
 
 type Household = {
   household_id: number;
@@ -23,7 +24,7 @@ type StreamingAccount = {
   household_id: number;
   service_name: string;
   account_identifier: string;
-  password: string;
+  has_password: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -283,13 +284,6 @@ app.get("/accounts", async (c) => {
       "shared_vault_password.group_id as household_id",
       "shared_vault_password.service_name",
       "shared_vault_password.service_username as account_identifier",
-      db.raw(`(
-        SELECT encrypted_service_password
-        FROM user_vault_access
-        WHERE user_vault_access.item_id = shared_vault_password.item_id
-        ORDER BY user_id ASC
-        LIMIT 1
-      ) as service_password`),
       "shared_vault_password.created_at",
       "shared_vault_password.updated_at",
     )
@@ -305,7 +299,7 @@ app.get("/accounts", async (c) => {
     household_id: row.household_id,
     service_name: row.service_name,
     account_identifier: row.account_identifier ?? "",
-    password: row.service_password ? decoder.decode(row.service_password) : "",
+    has_password: true,
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
   }));
@@ -381,12 +375,75 @@ app.post("/accounts", async (c) => {
     household_id: created.household_id,
     service_name: created.service_name,
     account_identifier: created.account_identifier,
-    password: body.password,
+    has_password: true,
     created_at: String(created.created_at),
     updated_at: String(created.updated_at),
   };
 
   return c.json(newAccount, 201);
+});
+
+app.post("/accounts/:accountId/reveal", async (c) => {
+  const accountId = Number(c.req.param("accountId"));
+
+  if (!Number.isInteger(accountId)) {
+    return c.json({ error: "accountId must be a valid integer" }, 400);
+  }
+
+  const body = await c.req.json();
+  const userPassword = typeof body.user_password === "string" ? body.user_password : "";
+
+  if (!userPassword) {
+    return c.json({ error: "user_password is required" }, 400);
+  }
+
+  // deno-lint-ignore no-explicit-any
+  const { loggedIn, userId } = await isLoggedIn(c as any);
+  if (!loggedIn || userId === undefined) {
+    return c.json({ error: "Not logged in" }, 401);
+  }
+
+  const account = await db("shared_vault_password as svp")
+    .join("household_membership as hm", "hm.household_id", "svp.group_id")
+    .select("svp.item_id")
+    .where({ "svp.item_id": accountId, "hm.user_id": userId })
+    .first();
+
+  if (!account) {
+    return c.json({ error: "Account not found" }, 404);
+  }
+
+  const currentUser = await db("user_account")
+    .select("password_salt", "encrypted_private_key")
+    .where({ user_id: userId })
+    .first();
+
+  if (!currentUser) {
+    return c.json({ error: "User not found" }, 404);
+  }
+
+  try {
+    await unlockKey(
+      userPassword,
+      currentUser.password_salt as Uint8Array,
+      currentUser.encrypted_private_key as Uint8Array,
+    );
+  } catch (_error) {
+    return c.json({ error: "Invalid user password" }, 401);
+  }
+
+  const accessRow = await db("user_vault_access")
+    .select("encrypted_service_password")
+    .where({ item_id: accountId, user_id: userId })
+    .first();
+
+  if (!accessRow) {
+    return c.json({ error: "Password record not found" }, 404);
+  }
+
+  return c.json({
+    password: decoder.decode(accessRow.encrypted_service_password),
+  });
 });
 
 app.delete("/accounts/:accountId", async (c) => {
@@ -418,7 +475,7 @@ app.delete("/accounts/:accountId", async (c) => {
       household_id: deletedAccount.household_id,
       service_name: deletedAccount.service_name,
       account_identifier: deletedAccount.account_identifier ?? "",
-      password: "",
+      has_password: false,
       created_at: String(deletedAccount.created_at),
       updated_at: String(deletedAccount.updated_at),
     },

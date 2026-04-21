@@ -126,14 +126,7 @@
       }
 
       .password-cell {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 74px;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .password-value {
-        overflow-wrap: anywhere;
+        text-align: right;
       }
 
       #members-output {
@@ -193,6 +186,36 @@
 
       .overview {
         background: #fcfcfc;
+      }
+
+      .password-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+      }
+
+      .password-modal-overlay[hidden] {
+        display: none;
+      }
+
+      .password-modal-window {
+        width: min(420px, calc(100vw - 24px));
+      }
+
+      .password-modal-form {
+        display: grid;
+        gap: 8px;
+      }
+
+      .password-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 6px;
       }
 
       @media (max-width: 760px) {
@@ -283,6 +306,26 @@
       </div>
     </div>
 
+    <div id="password-modal-overlay" class="password-modal-overlay" hidden>
+      <div class="window password-modal-window" role="dialog" aria-modal="true" aria-labelledby="password-modal-title">
+        <div class="title-bar">
+          <div id="password-modal-title" class="title-bar-text">Confirm Your Password</div>
+        </div>
+        <div class="window-body">
+          <form id="password-modal-form" class="password-modal-form">
+            <p>Enter your user password to access this service password.</p>
+            <label for="password-modal-input">User Password</label>
+            <input id="password-modal-input" type="password" autocomplete="current-password" required>
+            <p id="password-modal-error" class="status" role="status" aria-live="polite"></p>
+            <div class="password-modal-actions">
+              <button id="password-modal-cancel" type="button">Cancel</button>
+              <button id="password-modal-confirm" type="submit">Confirm</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <script>
       const accountsOutput = document.getElementById("accounts-output");
       const accountsForm = document.getElementById("accounts-form");
@@ -299,6 +342,11 @@
       const householdCreatedEl = document.getElementById("household-created");
       const householdUpdatedEl = document.getElementById("household-updated");
       const householdMemberCountEl = document.getElementById("household-member-count");
+      const passwordModalOverlay = document.getElementById("password-modal-overlay");
+      const passwordModalForm = document.getElementById("password-modal-form");
+      const passwordModalInput = document.getElementById("password-modal-input");
+      const passwordModalCancel = document.getElementById("password-modal-cancel");
+      const passwordModalError = document.getElementById("password-modal-error");
       let currentHouseholdId = null;
       let currentUserId = null;
 
@@ -369,11 +417,10 @@
               <td>${escapeHtml(account.service_name)}</td>
               <td>${escapeHtml(account.account_identifier)}</td>
               <td class="password-cell">
-                <span class="password-value">${escapeHtml(account.password || "")}</span>
                 <button
                   class="copy-password-btn"
                   type="button"
-                  data-copy-password="${escapeHtml(account.password || "")}" 
+                  data-account-id="${String(account.account_id)}"
                   aria-label="Copy password"
                 >
                   Copy
@@ -414,6 +461,92 @@
           button.textContent = originalText;
           button.disabled = false;
         }, 1200);
+      }
+
+      async function copyTextToClipboard(text) {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+          await navigator.clipboard.writeText(text);
+          return;
+        }
+
+        const fallbackInput = document.createElement("textarea");
+        fallbackInput.value = text;
+        fallbackInput.setAttribute("readonly", "");
+        fallbackInput.style.position = "fixed";
+        fallbackInput.style.opacity = "0";
+        document.body.appendChild(fallbackInput);
+        fallbackInput.focus();
+        fallbackInput.select();
+
+        const copied = document.execCommand("copy");
+        document.body.removeChild(fallbackInput);
+
+        if (!copied) {
+          throw new Error("Clipboard copy command failed");
+        }
+      }
+
+      function requestUserPassword(initialErrorMessage = "") {
+        return new Promise((resolve) => {
+          const input = passwordModalInput;
+          const form = passwordModalForm;
+          const cancelButton = passwordModalCancel;
+          const errorEl = passwordModalError;
+
+          if (!(input instanceof HTMLInputElement) || !(form instanceof HTMLFormElement) || !(cancelButton instanceof HTMLButtonElement) || !(errorEl instanceof HTMLElement) || !(passwordModalOverlay instanceof HTMLElement)) {
+            resolve(null);
+            return;
+          }
+
+          errorEl.textContent = initialErrorMessage;
+          input.value = "";
+          passwordModalOverlay.hidden = false;
+          window.setTimeout(() => input.focus(), 0);
+
+          const close = (value) => {
+            passwordModalOverlay.hidden = true;
+            form.removeEventListener("submit", onSubmit);
+            cancelButton.removeEventListener("click", onCancel);
+            input.removeEventListener("keydown", onInputKeyDown);
+            passwordModalOverlay.removeEventListener("click", onOverlayClick);
+            resolve(value);
+          };
+
+          const onSubmit = (event) => {
+            event.preventDefault();
+            const entered = input.value.trim();
+
+            if (!entered) {
+              errorEl.textContent = "User password is required.";
+              input.focus();
+              return;
+            }
+
+            close(entered);
+          };
+
+          const onCancel = () => {
+            close(null);
+          };
+
+          const onInputKeyDown = (event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              close(null);
+            }
+          };
+
+          const onOverlayClick = (event) => {
+            if (event.target === passwordModalOverlay) {
+              close(null);
+            }
+          };
+
+          form.addEventListener("submit", onSubmit);
+          cancelButton.addEventListener("click", onCancel);
+          input.addEventListener("keydown", onInputKeyDown);
+          passwordModalOverlay.addEventListener("click", onOverlayClick);
+        });
       }
 
       async function loadAccounts() {
@@ -567,15 +700,65 @@
           return;
         }
 
-        const passwordToCopy = target.dataset.copyPassword;
-        if (typeof passwordToCopy === "string") {
+        if (target.classList.contains("copy-password-btn")) {
+          const accountId = Number(target.dataset.accountId || "");
+          if (!Number.isInteger(accountId)) {
+            statusEl.textContent = "Invalid account selected.";
+            return;
+          }
+
+          let userPasswordError = "";
+          let passwordToCopy = "";
+
+          // Keep prompting until password is verified or user cancels.
+          while (true) {
+            const userPassword = await requestUserPassword(userPasswordError);
+            if (!userPassword) {
+              statusEl.textContent = "Copy canceled.";
+              return;
+            }
+
+            statusEl.textContent = "Verifying user password...";
+
+            const revealResponse = await fetch(`/api/household/accounts/${accountId}/reveal`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ user_password: userPassword }),
+            });
+
+            if (revealResponse.status === 401) {
+              userPasswordError = "Invalid user password. Please try again.";
+              statusEl.textContent = userPasswordError;
+              continue;
+            }
+
+            if (!revealResponse.ok) {
+              const errorPayload = await revealResponse.json().catch(() => ({ error: "Could not verify user password." }));
+              throw new Error(errorPayload.error || "Could not verify user password.");
+            }
+
+            const revealPayload = await revealResponse.json();
+            passwordToCopy = typeof revealPayload.password === "string" ? revealPayload.password : "";
+
+            if (!passwordToCopy) {
+              throw new Error("No password available to copy.");
+            }
+
+            break;
+          }
+
           try {
-            await navigator.clipboard.writeText(passwordToCopy);
+            await copyTextToClipboard(passwordToCopy);
             statusEl.textContent = "Password copied to clipboard.";
             setCopiedState(target);
-          } catch (_error) {
-            statusEl.textContent = "Could not copy password.";
+          } catch (error) {
+            statusEl.textContent = error instanceof Error ? error.message : "Could not copy password.";
           }
+
+          return;
+        }
+
+        if (!target.classList.contains("account-delete-btn")) {
           return;
         }
 

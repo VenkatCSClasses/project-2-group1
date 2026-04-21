@@ -32,9 +32,10 @@
                 </section>
                 <section class="leaveHousehold" aria-label="Leave Household Form">
                     <h3>Leave Household</h3>
-                    <form hx-post="/api/homepage/leave-household" hx-target="#responseJoin" hx-swap="innerHTML">
-                        <select name="households" id="item-dropdown" hx-get="/api/homepage/leave" hx-trigger="load">
-                            <option value="">Loading...</option>
+                    <form hx-post="/api/homepage/leave-household" hx-target="#responseLeave" hx-swap="innerHTML">
+                        <label for="householdName">Leave Household:</label>
+                        <select name="householdID" id="item-dropdown" hx-get="/api/homepage/leave-dropdown" hx-trigger="load, updateDropdown from:body" hx-target="this">
+                            <option value="" disabled selected>Loading...</option>
                         </select>
                         <button type="submit">Submit</button>
                     </form>

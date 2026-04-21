@@ -72,7 +72,12 @@ app.get("/leave-dropdown", async (c: Context) => {
   const households = await db("household_membership")
     .where({user_id: userID});
 
+  if (households.length === 0) {
+    return c.html(`<option value="" disabled selected>Not part of any households</option>`);
+  }
+
   // Parse households into options for form
+  dropdownHTML += `<option value="" disabled selected>Select a household...</option>\n`;
   for (const household of households){
     const householdData = await db("household")
       .select("household_name")
@@ -156,6 +161,7 @@ app.post("/join-household", async (c: Context) => {
 
   // Success alert
   const householdName: string = household.household_name;
+  c.header("HX-Trigger", "updateDropdown");
   return c.html(
     html`
       "UserID: ${userID} successfully joined household: ${householdName}. Refreshing page!"
@@ -225,6 +231,7 @@ app.post("/create-household", async (c: Context) => {
     .insert({user_id: userID, household_id: householdID, role: "Manager"});
 
   // Success alert
+  c.header("HX-Trigger", "updateDropdown");
   return c.html(
     html`
       "UserID: ${userID} successfully created household: '${householdName}' with join code ${joinCode}."
@@ -260,7 +267,7 @@ app.post("/leave-household", async (c: Context) => {
   } 
 
   // Ensure householdID is numeric
-  if (!/^d+$/.test(householdID.trim())){
+  if (!/^\d+$/.test(householdID.trim())){
     return c.html(
       html`
         "Error: Household ID must reference a valid, existing household that you are in."
@@ -324,6 +331,7 @@ app.post("/leave-household", async (c: Context) => {
       .where({household_id: householdID})
       .del();
     
+    c.header("HX-Trigger", "updateDropdown");
     return c.html(
       html`
         "Household successfully left with no users, deleting household."
@@ -331,6 +339,7 @@ app.post("/leave-household", async (c: Context) => {
     )
   }
 
+  c.header("HX-Trigger", "updateDropdown");
   return c.html(
       html`
         "Household successfully left."

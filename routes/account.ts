@@ -1,4 +1,4 @@
-import { Hono } from "@hono/hono";
+import { Context, Hono } from "@hono/hono";
 import { html } from "@hono/hono/html";
 import { db } from "../database/knex.ts";
 import { Result } from "pg";
@@ -129,10 +129,15 @@ app.get("/login", async (c) => {
   console.log(`Created login form nonce=${nonce}`, insertResult);
 
   return c.html(
-    // It's important to add html before your `template strings` so that
-    // the data is properly escaped and doesn't introduce XSS vulnerabilities.
     html`
-      <p>You sent a request to the account route at time=${Date.now()}</p>
+      <form class="login-form" hx-post="/api/account/login" hx-swap="outerHTML">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required>
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+        <input type="hidden" name="nonce" value="${nonce}" />
+        <button type="submit">Login</button>
+      </form>
     `,
   );
 });

@@ -1,7 +1,10 @@
 import { Buffer } from "node:buffer";
+import { db } from "./database/knex.ts";
 import { Context } from "hono";
 import { sign, verify } from "hono/jwt";
 import { getCookie, setCookie } from "hono/cookie";
+import { CookieOptions } from "hono/utils/cookie";
+import { BlankEnv, BlankInput } from "hono/types";
 import { JWTPayload } from "hono/utils/jwt/types";
 
 // Some helper fns from mozilla examples converted to typescript
@@ -16,6 +19,7 @@ export async function exportRSAKeyPair(
     "spki",
     keyPair.publicKey,
   );
+  console.log("Public Key (SPKI) as ArrayBuffer:", publicKeyBuffer);
 
   const privateKeyBuffer = await crypto.subtle.exportKey(
     "pkcs8",
@@ -150,10 +154,13 @@ export async function generateAccountSecrets(password: string): Promise<{
   };
 }
 
-export function getJWTSecret(): string {
-  // For now, use the same hardcoded secret used in testing
-  // TODO: In production, read from database or environment
-  return "subseer-secret-key-for-testing";
+export async function getJWTSecret(): Promise<string> {
+  const row = await db.select("token").from("jwt").first();
+  if (row) {
+    return row.token;
+  } else {
+    throw new Error("No JWT key found in database");
+  }
 }
 
 /**
@@ -170,12 +177,10 @@ export async function setJWTCookie(userId: number, c: Context): Promise<void> {
 
   const secret = await getJWTSecret();
   const token = await sign(payload, secret, "HS512");
-  const secure = new URL(c.req.url).protocol === "https:";
 
   setCookie(c, "jwt", token, {
     sameSite: "strict",
-    secure,
-    path: "/",
+    secure: true,
     maxAge: 60 * 60 * 24, // 1 day
   });
 }
@@ -186,9 +191,7 @@ export async function isLoggedIn(
   const jwt = getCookie(c, "jwt");
 
   try {
-    const secret = await getJWTSecret();
-    
-    const verifyResult = await verify(jwt ?? "", secret, {
+    const verifyResult = await verify(jwt ?? "", await getJWTSecret(), {
       iss: "subseer",
       alg: "HS512",
     });
@@ -197,7 +200,7 @@ export async function isLoggedIn(
       loggedIn: true,
       userId: verifyResult.id as number,
     };
-  } catch (_error) {
+  } catch (_) {
     return {
       loggedIn: false,
       userId: undefined,

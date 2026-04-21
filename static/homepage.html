@@ -22,7 +22,7 @@
                     </form>
                 </section>
                     <h3>Join Household</h3>
-                <section class="joinHousehold" aria-label="Join Household Form"></section>
+                <section class="joinHousehold" aria-label="Join Household Form">
                     <form hx-post="/api/homepage/join-household" hx-target="#responseJoin" hx-swap="innerHTML">
                         <label for="householdName">Join Household Via Code:</label>
                         <input type="text" id="householdCode" name="householdCode" placeholder="Household Join Code" aria-placeholder="Household Join Code">
@@ -30,14 +30,20 @@
                     </form>
                     <div id="responseJoin"></div>
                 </section>
-                <section>
+                <section class="leaveHousehold" aria-label="Leave Household Form">
                     <h3>Leave Household</h3>
-                    <div id="leaveDropdown" hx-get="/api/homepage/leave-dropdown" hx-trigger="load" hx-swap="innerHTML"></div> 
+                    <form hx-post="/api/homepage/leave-household" hx-target="#responseJoin" hx-swap="innerHTML">
+                        <select name="households" id="item-dropdown" hx-get="/api/homepage/leave" hx-trigger="load">
+                            <option value="">Loading...</option>
+                        </select>
+                        <button type="submit">Submit</button>
+                    </form>
+                    <div id="responseLeave"></div>
                 </section>
             </section>
-            <section class="householdView">
+            <section class="viewHouseholds">
                 <h2>Household View</h2>
-                <div id="householdView">
+                <div id="viewHouseholds">
                     <a href="/api/homepage/household-view">Click to view households!</a>
                 </div>
             </section>

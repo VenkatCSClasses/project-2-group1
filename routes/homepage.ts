@@ -53,6 +53,44 @@ app.get("/member-households", async (c: Context) => {
   )
 });
 
+app.get("/leave-dropdown", async (c: Context) => {
+  let dropdownHTML: string = "";
+  // deno-lint-ignore no-explicit-any
+  const {loggedIn, userId} = await isLoggedIn(c as any);
+
+  // Ensure user is logged in
+  if (!loggedIn || !userId){
+    return c.html(
+      html`
+        "Error: You are not logged in. Return to login page."
+      `,
+    )
+  }
+  const userID: number = userId;
+
+  // Get households
+  const households = await db("household_membership")
+    .where({user_id: userID});
+
+  // Parse households into options for form
+  for (const household of households){
+    const householdData = await db("household")
+      .select("household_name")
+      .where({household_id: household.household_id})
+      .first();
+    
+    if (householdData) {
+      dropdownHTML += `<option value="${household.household_id}">${householdData.household_name} (#${household.household_id})</option>\n`;
+    }
+  }
+
+  return c.html(
+    html`
+      ${dropdownHTML}
+    `
+  ),
+});
+
 // Route to join a household
 app.post("/join-household", async (c: Context) => {
   const body = await c.req.parseBody();

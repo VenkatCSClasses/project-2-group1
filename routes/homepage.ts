@@ -1,6 +1,7 @@
 import { Context, Hono } from "@hono/hono";
 import { html } from "@hono/hono/html";
 import { db } from "../database/knex.ts";
+import { isLoggedIn } from "../cryptography.ts";
 
 const app = new Hono();
 
@@ -160,7 +161,6 @@ app.get("/member-households", async (c: Context) => {
 });
 
 app.get("/leave-dropdown", async (c: Context) => {
-  let dropdownHTML: string = "";
   // deno-lint-ignore no-explicit-any
   const { loggedIn, userId } = await isLoggedIn(c as any);
 
@@ -205,18 +205,18 @@ app.get("/leave-dropdown", async (c: Context) => {
     const numAccounts = accountCountRes?.count || 0;
 
     // Convert household objects into individual divs
-    memberHTML += `
+    return c.html(html`
       <div class="household-card">
         <h3>${household.household_name} (ID: ${household.household_id})</h3>
-        Members: ${numMembers} |
-        Accounts: ${numAccounts} |
-        <a href="/household?householdId=${household.household_id}&userId=${userID}" class="btn">View Household Details</a>
+        Members: ${numMembers} | Accounts: ${numAccounts} |
+        <a href="/household?householdId=${household
+          .household_id}&userId=${userID}" class="btn"
+        >View Household Details</a>
       </div>
-    `;
+    `);
   }
 
-  // Return html
-  return c.html(memberHTML);
+  return c.html("<p></p>");
 });
 
 app.get("/leave-dropdown", async (c: Context) => {

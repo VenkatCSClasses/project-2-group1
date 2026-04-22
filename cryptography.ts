@@ -1,10 +1,7 @@
-import { Buffer } from "node:buffer";
 import { db } from "./database/knex.ts";
 import { Context } from "hono";
 import { sign, verify } from "hono/jwt";
 import { getCookie, setCookie } from "hono/cookie";
-import { CookieOptions } from "hono/utils/cookie";
-import { BlankEnv, BlankInput } from "hono/types";
 import { JWTPayload } from "hono/utils/jwt/types";
 
 // Some helper fns from mozilla examples converted to typescript
@@ -112,17 +109,17 @@ export async function unlockKey(
 ) {
   const derivedKey = await getSymmKeyFromPassword(
     password,
-    Buffer.from(passwordSalt),
+    new Uint8Array(passwordSalt),
   );
 
   return await importPrivateKey( // convert decrypted binary to key object
     await crypto.subtle.decrypt(
       {
         name: "AES-GCM",
-        iv: Buffer.from(passwordSalt.slice(0, 12)),
+        iv: new Uint8Array(passwordSalt.slice(0, 12)),
       },
       derivedKey,
-      Buffer.from(encryptedPrivateKey),
+      new Uint8Array(encryptedPrivateKey),
     ),
   );
 }
@@ -133,7 +130,10 @@ export async function generateAccountSecrets(password: string): Promise<{
   encrypted_private_key: Uint8Array;
 }> {
   const salt = await getRandomSalt();
-  const derivedKey = await getSymmKeyFromPassword(password, Buffer.from(salt));
+  const derivedKey = await getSymmKeyFromPassword(
+    password,
+    new Uint8Array(salt),
+  );
 
   const keyPair = await generateRSAKeyPair();
   const exportedKeys = await exportRSAKeyPair(keyPair);
@@ -144,7 +144,7 @@ export async function generateAccountSecrets(password: string): Promise<{
       iv: salt.slice(0, 12),
     },
     derivedKey,
-    Buffer.from(exportedKeys.private),
+    new Uint8Array(exportedKeys.private),
   );
 
   return {

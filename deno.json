@@ -10,8 +10,8 @@
   },
   "tasks": {
     "start": "deno run --watch --allow-net --ignore-env --allow-read=. main.ts",
-    "check": "deno fmt **/*.ts && deno test tests/*.ts",
-    "migrate": "deno run --allow-net --allow-env --allow-read --allow-write migrate.ts"
+    "check": "deno fmt **/*.ts && deno test --ignore-env --allow-read=. tests/*.ts",
+    "migrate": "deno run --allow-net --ignore-env --allow-read --allow-write migrate.ts"
   },
   "deploy": {
     "org": "comp345spr26team1",

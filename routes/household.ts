@@ -2,6 +2,7 @@
 
 import { Hono } from "@hono/hono";
 import { db } from "../database/knex.ts";
+import { isLoggedIn, unlockKey } from "../cryptography.ts";
 
 type Household = {
   household_id: number;
@@ -105,11 +106,14 @@ app.get("/context", async (c) => {
   const householdId = parseOptionalHouseholdId(
     c.req.query("household_id") ?? null,
   );
-  const userId = parseOptionalUserId(c.req.query("user_id") ?? null);
+  const queryUserId = parseOptionalUserId(c.req.query("user_id") ?? null);
+
+  const { loggedIn, userId: sessionUserId } = await isLoggedIn(c);
+  const userId = queryUserId ?? (loggedIn ? sessionUserId ?? null : null);
 
   if (householdId === null || userId === null) {
     return c.json({
-      error: "household_id and user_id query parameters are required",
+      error: "household_id query parameter and a logged-in user are required",
     }, 400);
   }
 
@@ -446,6 +450,63 @@ app.delete("/accounts/:accountId", async (c) => {
       updated_at: String(deletedAccount.updated_at),
     },
   });
+});
+
+app.post("/accounts/:accountId/reveal", async (c) => {
+  const accountId = Number(c.req.param("accountId"));
+
+  if (!Number.isInteger(accountId)) {
+    return c.json({ error: "accountId must be a valid integer" }, 400);
+  }
+
+  const { loggedIn, userId } = await isLoggedIn(c);
+  if (!loggedIn || !userId) {
+    return c.json({ error: "You must be logged in" }, 401);
+  }
+
+  const body = await c.req.json().catch(() => ({}));
+  const userPassword = typeof body.user_password === "string"
+    ? body.user_password
+    : "";
+
+  if (!userPassword.trim()) {
+    return c.json({ error: "user_password is required" }, 400);
+  }
+
+  const user = await db("user_account")
+    .select("password_salt", "encrypted_private_key")
+    .where({ user_id: userId })
+    .first();
+
+  if (!user) {
+    return c.json({ error: "User account not found" }, 404);
+  }
+
+  try {
+    await unlockKey(
+      userPassword,
+      new Uint8Array(user.password_salt),
+      new Uint8Array(user.encrypted_private_key),
+    );
+  } catch (_error) {
+    return c.json({ error: "Invalid user password" }, 401);
+  }
+
+  const access = await db("user_vault_access")
+    .select("encrypted_service_password")
+    .where({ user_id: userId, item_id: accountId })
+    .first();
+
+  if (!access) {
+    return c.json({ error: "Account not found or access denied" }, 404);
+  }
+
+  const passwordBytes = access.encrypted_service_password;
+  const password = typeof passwordBytes === "string"
+    ? passwordBytes
+    : decoder.decode(passwordBytes);
+
+  return c.json({ password });
 });
 
 app.get("/", async (c) => {

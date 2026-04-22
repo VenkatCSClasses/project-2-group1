@@ -6,10 +6,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Household Route</title>
-    <link rel="stylesheet" href="https://unpkg.com/98.css">
+    <link rel="stylesheet" href="/selfcsp/98.css">
     <style>
       html {
-        background-color: #a8ea90;
+        background-color: #008080;
       }
 
       body {
@@ -33,7 +33,7 @@
       }
 
       .window {
-        box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.2);
+        box-shadow: 2px 2px 0 #000;
       }
 
       .window-body {
@@ -47,8 +47,8 @@
 
       .section-panel {
         padding: 12px;
-        border: 2px groove #dfdfdf;
-        background: #fff;
+        border: 2px inset #fff;
+        background: #c0c0c0;
       }
 
       .top-grid {
@@ -152,17 +152,17 @@
       .viewer-context {
         margin: 0 0 10px;
         padding: 8px 10px;
-        border: 1px solid #7e7e7e;
-        background: #eef6e8;
+        border: 2px inset #fff;
+        background: #c0c0c0;
         font-weight: 700;
       }
 
       .viewer-context.manager {
-        background: #e6f4ff;
+        background: #d6e7f5;
       }
 
       .viewer-context.member {
-        background: #fff6df;
+        background: #efe9d2;
       }
 
       .manager-only-note {
@@ -181,11 +181,11 @@
       }
 
       .members {
-        background: #f4f4f4;
+        background: #c0c0c0;
       }
 
       .overview {
-        background: #fcfcfc;
+        background: #c0c0c0;
       }
 
       .password-modal-overlay {
@@ -388,12 +388,13 @@
 
         const householdRaw = readParam(searchParams, [
           "householdId",
+          "householdID",
           "household_id",
+          "household_Id",
           "househildId",
           "househild_id",
         ]);
-        const userRaw = readParam(searchParams, ["userId", "user_id"]);
-
+        const userRaw = readParam(searchParams, ["userId", "userID", "user_id"]);
         return {
           householdId: parsePositiveInteger(householdRaw),
           userId: parsePositiveInteger(userRaw),
@@ -668,28 +669,43 @@
       async function loadHouseholdContext() {
         const ids = getPageContextIds();
 
-        if (ids.householdId === null || ids.userId === null) {
+        if (ids.householdId === null) {
           renderHouseholdContext(null);
-          accountsOutput.textContent = "Missing required query params: householdId and userId.";
-          membersOutput.innerHTML = "<li>Missing required query params: householdId and userId.</li>";
+          accountsOutput.textContent = "Missing required query param: householdId.";
+          membersOutput.innerHTML = "<li>Missing required query param: householdId.</li>";
           return;
         }
 
         try {
+          const contextQuery = new URLSearchParams({
+            household_id: String(ids.householdId),
+          });
+
+          if (ids.userId !== null) {
+            contextQuery.set("user_id", String(ids.userId));
+          }
+
           const response = await fetch(
-            `/api/household/context?household_id=${ids.householdId}&user_id=${ids.userId}`,
+            `/api/household/context?${contextQuery.toString()}`,
           );
 
           if (!response.ok) {
-            throw new Error("Failed to load household context");
+            const errorPayload = await response.json().catch(() => ({}));
+            const errorMessage = typeof errorPayload.error === "string"
+              ? errorPayload.error
+              : "Failed to load household context";
+            throw new Error(`${errorMessage} (HTTP ${response.status})`);
           }
 
           const payload = await response.json();
           renderHouseholdContext(payload);
-        } catch (_error) {
+        } catch (error) {
+          const message = error instanceof Error
+            ? error.message
+            : "Unable to load household context right now.";
           renderHouseholdContext(null);
-          accountsOutput.textContent = "Unable to load household context right now.";
-          membersOutput.innerHTML = "<li>Unable to load household context right now.</li>";
+          accountsOutput.textContent = message;
+          membersOutput.innerHTML = `<li>${escapeHtml(message)}</li>`;
         }
       }
 

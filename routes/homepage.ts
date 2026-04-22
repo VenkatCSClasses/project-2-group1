@@ -1,6 +1,7 @@
 import { Context, Hono } from "@hono/hono";
 import { html } from "@hono/hono/html";
 import { db } from "../database/knex.ts";
+import { isLoggedIn } from "../cryptography.ts";
 
 const app = new Hono();
 
@@ -28,7 +29,7 @@ type User = {
   created_at: Date;
   updated_at: Date;
   password_salt: Uint8Array;
-  password_hash: Uint8Array;
+  encrypted_private_key: Uint8Array;
 };
 
 // Route to return manager household information
@@ -37,8 +38,7 @@ app.get("/manager-households", async (c: Context) => {
   let managerHTML: string = "";
 
   // Check log-in
-  // deno-lint-ignore no-explicit-any
-  const {loggedIn, userId} = await isLoggedIn(c as any);
+  const {loggedIn, userId} = await isLoggedIn(c);
 
   // Ensure user is logged in
   if (!loggedIn || !userId){
@@ -86,7 +86,7 @@ app.get("/manager-households", async (c: Context) => {
         <h3>${household.household_name} (ID: ${household.household_id})</h3>
         Members: ${numMembers} |
         Accounts: ${numAccounts} |
-        <a href="/household?householdId=${household.household_id}&userId=${userID}" class="btn">View Household Details</a>
+        <a href="/household.html?household_id=${household.household_id}&user_id=${userID}" class="btn">View Household Details</a>
       </div>
     `;
   }
@@ -101,8 +101,7 @@ app.get("/member-households", async (c: Context) => {
   let memberHTML: string = "";
 
   // Check log-in
-  // deno-lint-ignore no-explicit-any
-  const {loggedIn, userId} = await isLoggedIn(c as any);
+  const {loggedIn, userId} = await isLoggedIn(c);
 
   // Ensure user is logged in
   if (!loggedIn || !userId){
@@ -150,7 +149,7 @@ app.get("/member-households", async (c: Context) => {
         <h3>${household.household_name} (ID: ${household.household_id})</h3>
         Members: ${numMembers} |
         Accounts: ${numAccounts} |
-        <a href="/household?householdId=${household.household_id}&userId=${userID}" class="btn">View Household Details</a>
+        <a href="/household.html?household_id=${household.household_id}&user_id=${userID}" class="btn">View Household Details</a>
       </div>
     `;
   }
@@ -161,8 +160,7 @@ app.get("/member-households", async (c: Context) => {
 
 app.get("/leave-dropdown", async (c: Context) => {
   let dropdownHTML: string = "";
-  // deno-lint-ignore no-explicit-any
-  const {loggedIn, userId} = await isLoggedIn(c as any);
+  const {loggedIn, userId} = await isLoggedIn(c);
 
   // Ensure user is logged in
   if (!loggedIn || !userId){
@@ -201,6 +199,17 @@ app.get("/leave-dropdown", async (c: Context) => {
 // Route to join a household
 app.post("/join-household", async (c: Context) => {
   const body = await c.req.parseBody();
+
+  const { loggedIn, userId } = await isLoggedIn(c);
+  if (!loggedIn || !userId) {
+    return c.html(
+      html`
+        <script>
+        alert("Error: You are not logged in. Return to login page.")
+        </script>
+      `,
+    );
+  }
 
   // Parse input as a number
   const householdCode = body["householdCode"];
@@ -241,15 +250,55 @@ app.post("/join-household", async (c: Context) => {
     );
   }
 
-  // TODO: Ensure membership connection hasn't already been made (currently overwrites manager or throws error)
-
-  // Insert new household membership connection
-  // TODO: Implement actual user ID addition (for now it adds a user with id -1)
-  const userID: number = -1;
+  // Ensure membership connection does not already exist
+  const userID: number = userId;
   const householdID: number = household.household_id;
 
+  const existingMembership = await db<HouseholdMembership>("household_membership")
+    .where({ user_id: userID, household_id: householdID })
+    .first();
+
+  if (existingMembership) {
+    return c.html(
+      html`
+        <script>
+        alert("You are already part of this household.")
+        </script>
+      `,
+    );
+  }
+
   await db<HouseholdMembership>("household_membership")
-    .insert({ user_id: userID, household_id: householdID, role: "member" });
+    .insert({ user_id: userID, household_id: householdID, role: "Member" });
+
+  // Grant access to existing household account passwords for newly joined users.
+  const existingAccounts = await db("shared_vault_password as svp")
+    .select(
+      "svp.item_id as item_id",
+      db.raw(`(
+        SELECT encrypted_service_password
+        FROM user_vault_access
+        WHERE user_vault_access.item_id = svp.item_id
+        ORDER BY user_id ASC
+        LIMIT 1
+      ) as encrypted_service_password`),
+    )
+    .where("svp.group_id", householdID);
+
+  const accessRows = existingAccounts
+    .filter((account) => Boolean(account.encrypted_service_password))
+    .map((account) => ({
+      user_id: userID,
+      item_id: account.item_id,
+      encrypted_service_password: account.encrypted_service_password,
+    }));
+
+  if (accessRows.length > 0) {
+    await db("user_vault_access")
+      .insert(accessRows)
+      .onConflict(["user_id", "item_id"])
+      .ignore();
+  }
 
   // Success alert
   const householdName: string = household.household_name;
@@ -267,6 +316,18 @@ app.post("/join-household", async (c: Context) => {
 // Route to create a household
 app.post("/create-household", async (c: Context) => {
   const body = await c.req.parseBody();
+
+  // deno-lint-ignore no-explicit-any
+  const { loggedIn, userId } = await isLoggedIn(c as any);
+  if (!loggedIn || !userId) {
+    return c.html(
+      html`
+        <script>
+        alert("Error: You are not logged in. Return to login page.")
+        </script>
+      `,
+    );
+  }
 
   const householdName = body["householdName"];
 
@@ -297,7 +358,7 @@ app.post("/create-household", async (c: Context) => {
   let tempHousehold: Household | undefined;
 
   do {
-    joinCode = Math.floor(Math.random() * 1000000);
+    joinCode = Math.floor(100000 + Math.random() * 900000);
 
     // Check and see if join code exists
     tempHousehold = await db<Household>("household")
@@ -310,23 +371,11 @@ app.post("/create-household", async (c: Context) => {
     .insert({ household_name: householdName, join_code: joinCode })
     .returning("*");
 
-  // Insert new member connection
-  // TODO: Implement actual user ID addition (creates and uses a dummy user for now)
-  const [newUser] = await db<User>("user_account")
-    .insert({
-      user_id: 2,
-      username: `dummy_${Date.now()}`,
-      public_key: new Uint8Array(0),
-      password_salt: new Uint8Array(0),
-      password_hash: new Uint8Array(0),
-    })
-    .returning("*");
-  const dummyUser2 = newUser;
-
-  const userID: number = dummyUser2.user_id;
+  // Insert manager membership for logged-in user
+  const userID: number = userId;
   const householdID: number = household.household_id;
   await db<HouseholdMembership>("household_membership")
-    .insert({ user_id: userID, household_id: householdID, role: "manager" });
+    .insert({ user_id: userID, household_id: householdID, role: "Manager" });
 
   // Success alert
   c.header("HX-Trigger", "updateDropdown");
@@ -341,7 +390,7 @@ app.post("/create-household", async (c: Context) => {
 app.post("/leave-household", async (c: Context) => {
   const body = await c.req.parseBody();
 
-  const {loggedIn, userId} = await isLoggedIn(c as any);
+  const {loggedIn, userId} = await isLoggedIn(c);
 
   // Ensure user is logged in
   if (!loggedIn || !userId){

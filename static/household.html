@@ -1,0 +1,897 @@
+<!-- Assisted-by: GitHub Copilot:GPT-5.3-Codex [apply_patch] [get_errors] -->
+ 
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Household Route</title>
+    <link rel="stylesheet" href="https://unpkg.com/98.css">
+    <style>
+      html {
+        background-color: #a8ea90;
+      }
+
+      body {
+        max-width: 980px;
+        margin: 24px auto;
+        padding: 0 14px 18px;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        font-family: "Times New Roman", Times, serif;
+        font-size-adjust: 0.2;
+      }
+
+      .title-actions {
+        margin-left: auto;
+      }
+
+      .window {
+        box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.2);
+      }
+
+      .window-body {
+        padding: 14px;
+      }
+
+      .household-card {
+        display: grid;
+        gap: 12px;
+      }
+
+      .section-panel {
+        padding: 12px;
+        border: 2px groove #dfdfdf;
+        background: #fff;
+      }
+
+      .top-grid {
+        display: grid;
+        grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
+        gap: 12px;
+      }
+
+      .meta-row {
+        display: grid;
+        grid-template-columns: 130px 1fr;
+        gap: 7px 10px;
+        margin: 0;
+      }
+
+      .meta-row dt {
+        font-weight: 700;
+      }
+
+      .meta-row dd {
+        margin: 0;
+      }
+
+      .accounts-form {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 7px;
+        max-width: 460px;
+      }
+
+      .accounts-form button {
+        width: 100%;
+      }
+
+      .accounts-form input {
+        width: 100%;
+      }
+
+      .section-spacer {
+        margin-top: 0;
+      }
+
+      .account-table {
+        width: 100%;
+        table-layout: fixed;
+      }
+
+      .account-table th,
+      .account-table td {
+        vertical-align: top;
+      }
+
+      .account-table td:last-child {
+        width: 92px;
+      }
+
+      .account-table th:nth-child(3),
+      .account-table th:nth-child(4),
+      .account-table td:nth-child(3),
+      .account-table td:nth-child(4) {
+        text-align: right;
+      }
+
+      .status {
+        min-height: 18px;
+        margin-top: 8px;
+      }
+
+      .copy-password-btn {
+        width: 74px;
+      }
+
+      .account-delete-btn {
+        width: 74px;
+      }
+
+      .password-cell {
+        text-align: right;
+      }
+
+      #members-output {
+        margin: 8px 0 0;
+        padding-left: 22px;
+      }
+
+      .member-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .member-remove-btn {
+        min-width: 64px;
+      }
+
+      .section-title {
+        margin: 0 0 7px;
+      }
+
+      .viewer-context {
+        margin: 0 0 10px;
+        padding: 8px 10px;
+        border: 1px solid #7e7e7e;
+        background: #eef6e8;
+        font-weight: 700;
+      }
+
+      .viewer-context.manager {
+        background: #e6f4ff;
+      }
+
+      .viewer-context.member {
+        background: #fff6df;
+      }
+
+      .manager-only-note {
+        margin: 8px 0;
+        font-size: 0.95rem;
+      }
+
+      .join-code-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .join-code-copy-btn {
+        min-width: 58px;
+      }
+
+      .members {
+        background: #f4f4f4;
+      }
+
+      .overview {
+        background: #fcfcfc;
+      }
+
+      .password-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+      }
+
+      .password-modal-overlay[hidden] {
+        display: none;
+      }
+
+      .password-modal-window {
+        width: min(420px, calc(100vw - 24px));
+      }
+
+      .password-modal-form {
+        display: grid;
+        gap: 8px;
+      }
+
+      .password-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 6px;
+      }
+
+      @media (max-width: 760px) {
+        .top-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .meta-row {
+          grid-template-columns: 108px 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="window">
+      <div class="title-bar">
+        <div class="title-bar-text">SubSeer Household View</div>
+        <div class="title-bar-controls title-actions">
+          <button type="button" onclick="window.location.href='/homepage'">Back</button>
+        </div>
+      </div>
+      <div class="window-body">
+        <article class="household-card" aria-label="Household placeholder">
+          <h2 id="household-name" class="section-title">Loading household...</h2>
+          <p id="viewer-context" class="viewer-context" role="status" aria-live="polite">
+            Loading user context...
+          </p>
+          <div class="top-grid">
+            <section aria-label="Household overview" class="section-panel overview" >
+              <h3 class="section-title">Household Overview</h3>
+              <dl class="meta-row">
+                <dt>Household ID:</dt>
+                <dd id="household-id">-</dd>
+
+                <dt>Join Code:</dt>
+                <dd>
+                  <span class="join-code-wrap">
+                    <span id="household-join-code">-</span>
+                    <button id="copy-join-code-btn" class="join-code-copy-btn" type="button" disabled>
+                      Copy
+                    </button>
+                  </span>
+                </dd>
+
+                <dt>Created:</dt>
+                <dd><time id="household-created" datetime="">-</time></dd>
+
+                <dt>Updated:</dt>
+                <dd><time id="household-updated" datetime="">-</time></dd>
+
+                <dt>Member Count:</dt>
+                <dd id="household-member-count">0</dd>
+              </dl>
+              <p id="join-code-status" class="status" role="status" aria-live="polite"></p>
+            </section>
+
+            <section class="members section-panel" aria-label="Household members">
+              <h3 class="section-title">Household Members</h3>
+              <p>Current residents with role assignments.</p>
+              <ul id="members-output">
+                <li>Loading members...</li>
+              </ul>
+              <p id="member-status" class="status" role="status" aria-live="polite"></p>
+            </section>
+          </div>
+
+          <section class="accounts section-panel" aria-label="Account placeholders">
+            <h3 class="section-title">Shared Vault Passwords</h3>
+            <form id="accounts-form" class="accounts-form" aria-label="Add streaming account">
+              <label for="service-name">Service</label>
+              <input id="service-name" name="serviceName" type="text" placeholder="Netflix" required autocomplete="organization">
+
+              <label for="account-identifier">Email Address</label>
+              <input id="account-identifier" name="accountIdentifier" type="email" placeholder="account@domain.com" required autocomplete="email">
+
+              <label for="account-password">Service Password</label>
+              <input id="account-password" name="accountPassword" type="text" placeholder="Password" required autocomplete="current-password">
+
+              <button type="submit">Add account</button>
+            </form>
+            <p id="manager-only-note" class="manager-only-note"></p>
+
+            <p id="account-status" class="status" role="status" aria-live="polite"></p>
+
+            <div id="accounts-output">Loading accounts...</div>
+          </section>
+        </article>
+      </div>
+    </div>
+
+    <div id="password-modal-overlay" class="password-modal-overlay" hidden>
+      <div class="window password-modal-window" role="dialog" aria-modal="true" aria-labelledby="password-modal-title">
+        <div class="title-bar">
+          <div id="password-modal-title" class="title-bar-text">Confirm Your Password</div>
+        </div>
+        <div class="window-body">
+          <form id="password-modal-form" class="password-modal-form">
+            <p>Enter your user password to access this service password.</p>
+            <label for="password-modal-input">User Password</label>
+            <input id="password-modal-input" type="password" autocomplete="current-password" required>
+            <p id="password-modal-error" class="status" role="status" aria-live="polite"></p>
+            <div class="password-modal-actions">
+              <button id="password-modal-cancel" type="button">Cancel</button>
+              <button id="password-modal-confirm" type="submit">Confirm</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const accountsOutput = document.getElementById("accounts-output");
+      const accountsForm = document.getElementById("accounts-form");
+      const statusEl = document.getElementById("account-status");
+      const memberStatusEl = document.getElementById("member-status");
+      const viewerContextEl = document.getElementById("viewer-context");
+      const managerOnlyNoteEl = document.getElementById("manager-only-note");
+      const membersOutput = document.getElementById("members-output");
+      const householdNameEl = document.getElementById("household-name");
+      const householdIdEl = document.getElementById("household-id");
+      const householdJoinCodeEl = document.getElementById("household-join-code");
+      const copyJoinCodeBtn = document.getElementById("copy-join-code-btn");
+      const joinCodeStatusEl = document.getElementById("join-code-status");
+      const householdCreatedEl = document.getElementById("household-created");
+      const householdUpdatedEl = document.getElementById("household-updated");
+      const householdMemberCountEl = document.getElementById("household-member-count");
+      const passwordModalOverlay = document.getElementById("password-modal-overlay");
+      const passwordModalForm = document.getElementById("password-modal-form");
+      const passwordModalInput = document.getElementById("password-modal-input");
+      const passwordModalCancel = document.getElementById("password-modal-cancel");
+      const passwordModalError = document.getElementById("password-modal-error");
+      let currentHouseholdId = null;
+      let currentUserId = null;
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function parsePositiveInteger(value) {
+        if (value === null || value === "") {
+          return null;
+        }
+
+        const parsed = Number(value);
+        if (!Number.isInteger(parsed) || parsed <= 0) {
+          return null;
+        }
+
+        return parsed;
+      }
+
+      function readParam(searchParams, keys) {
+        for (const key of keys) {
+          const value = searchParams.get(key);
+          if (value !== null && value !== "") {
+            return value;
+          }
+        }
+
+        return null;
+      }
+
+      function getPageContextIds() {
+        const searchParams = new URLSearchParams(window.location.search);
+
+        const householdRaw = readParam(searchParams, [
+          "householdId",
+          "household_id",
+          "househildId",
+          "househild_id",
+        ]);
+        const userRaw = readParam(searchParams, ["userId", "user_id"]);
+
+        return {
+          householdId: parsePositiveInteger(householdRaw),
+          userId: parsePositiveInteger(userRaw),
+        };
+      }
+
+      function applyRoleDisplayState() {
+        accountsForm.style.display = "grid";
+        managerOnlyNoteEl.textContent = "";
+      }
+
+      function renderAccounts(accounts) {
+        if (!accounts.length) {
+          accountsOutput.innerHTML = "<p>No streaming accounts have been added yet.</p>";
+          return;
+        }
+
+        const rows = accounts.map((account) => {
+          return `
+            <tr>
+              <td>${escapeHtml(account.service_name)}</td>
+              <td>${escapeHtml(account.account_identifier)}</td>
+              <td class="password-cell">
+                <button
+                  class="copy-password-btn"
+                  type="button"
+                  data-account-id="${String(account.account_id)}"
+                  aria-label="Copy password"
+                >
+                  Copy
+                </button>
+              </td>
+              <td>
+                <button type="button" class="account-delete-btn" data-account-id="${String(account.account_id)}">Delete</button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+        accountsOutput.innerHTML = `
+          <table class="account-table" aria-label="Stored streaming accounts">
+            <thead>
+              <tr>
+                <th>Service</th>
+                <th>Email Address</th>
+                <th>Password</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        `;
+      }
+
+      function isEmailAddress(value) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+      }
+
+      function setCopiedState(button) {
+        const originalText = button.textContent || "Copy";
+        button.textContent = "Copied!";
+        button.disabled = true;
+
+        window.setTimeout(() => {
+          button.textContent = originalText;
+          button.disabled = false;
+        }, 1200);
+      }
+
+      async function copyTextToClipboard(text) {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+          await navigator.clipboard.writeText(text);
+          return;
+        }
+
+        const fallbackInput = document.createElement("textarea");
+        fallbackInput.value = text;
+        fallbackInput.setAttribute("readonly", "");
+        fallbackInput.style.position = "fixed";
+        fallbackInput.style.opacity = "0";
+        document.body.appendChild(fallbackInput);
+        fallbackInput.focus();
+        fallbackInput.select();
+
+        const copied = document.execCommand("copy");
+        document.body.removeChild(fallbackInput);
+
+        if (!copied) {
+          throw new Error("Clipboard copy command failed");
+        }
+      }
+
+      function requestUserPassword(initialErrorMessage = "") {
+        return new Promise((resolve) => {
+          const input = passwordModalInput;
+          const form = passwordModalForm;
+          const cancelButton = passwordModalCancel;
+          const errorEl = passwordModalError;
+
+          if (!(input instanceof HTMLInputElement) || !(form instanceof HTMLFormElement) || !(cancelButton instanceof HTMLButtonElement) || !(errorEl instanceof HTMLElement) || !(passwordModalOverlay instanceof HTMLElement)) {
+            resolve(null);
+            return;
+          }
+
+          errorEl.textContent = initialErrorMessage;
+          input.value = "";
+          passwordModalOverlay.hidden = false;
+          window.setTimeout(() => input.focus(), 0);
+
+          const close = (value) => {
+            passwordModalOverlay.hidden = true;
+            form.removeEventListener("submit", onSubmit);
+            cancelButton.removeEventListener("click", onCancel);
+            input.removeEventListener("keydown", onInputKeyDown);
+            passwordModalOverlay.removeEventListener("click", onOverlayClick);
+            resolve(value);
+          };
+
+          const onSubmit = (event) => {
+            event.preventDefault();
+            const entered = input.value.trim();
+
+            if (!entered) {
+              errorEl.textContent = "User password is required.";
+              input.focus();
+              return;
+            }
+
+            close(entered);
+          };
+
+          const onCancel = () => {
+            close(null);
+          };
+
+          const onInputKeyDown = (event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              close(null);
+            }
+          };
+
+          const onOverlayClick = (event) => {
+            if (event.target === passwordModalOverlay) {
+              close(null);
+            }
+          };
+
+          form.addEventListener("submit", onSubmit);
+          cancelButton.addEventListener("click", onCancel);
+          input.addEventListener("keydown", onInputKeyDown);
+          passwordModalOverlay.addEventListener("click", onOverlayClick);
+        });
+      }
+
+      async function loadAccounts() {
+        if (currentHouseholdId === null) {
+          accountsOutput.textContent = "Select a valid household first.";
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/household/accounts?household_id=${currentHouseholdId}`);
+
+          if (!response.ok) {
+            throw new Error("Failed to load account data");
+          }
+
+          const payload = await response.json();
+          renderAccounts(Array.isArray(payload.data) ? payload.data : []);
+        } catch (_error) {
+          accountsOutput.textContent = "Unable to load accounts right now.";
+        }
+      }
+
+      function renderMembers(members) {
+        if (!members.length) {
+          householdMemberCountEl.textContent = "0";
+          membersOutput.innerHTML = "<li>No members have been added yet.</li>";
+          return;
+        }
+
+        householdMemberCountEl.textContent = String(members.length);
+
+        membersOutput.innerHTML = members
+          .map((member) => {
+            return `
+              <li>
+                <div class="member-row">
+                  <span><strong>${escapeHtml(member.name)}</strong> - ${escapeHtml(member.role)}</span>
+                  <button
+                    type="button"
+                    class="member-remove-btn"
+                    data-member-id="${String(member.member_id)}"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </li>
+            `;
+          })
+          .join("");
+      }
+
+      async function loadMembers() {
+        if (currentHouseholdId === null) {
+          membersOutput.innerHTML = "<li>Select a valid household first.</li>";
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/household/members?household_id=${currentHouseholdId}`);
+
+          if (!response.ok) {
+            throw new Error("Failed to load member data");
+          }
+
+          const payload = await response.json();
+          renderMembers(Array.isArray(payload.data) ? payload.data : []);
+        } catch (_error) {
+          membersOutput.innerHTML = "<li>Unable to load members right now.</li>";
+        }
+      }
+
+      function formatDate(iso) {
+        const date = new Date(iso);
+        if (Number.isNaN(date.getTime())) {
+          return "-";
+        }
+        return date.toLocaleString();
+      }
+
+      function renderHouseholdContext(context) {
+        if (!context || !context.household || !context.user) {
+          householdNameEl.textContent = "No household found";
+          householdIdEl.textContent = "-";
+          householdJoinCodeEl.textContent = "-";
+          copyJoinCodeBtn.disabled = true;
+          joinCodeStatusEl.textContent = "";
+          householdCreatedEl.textContent = "-";
+          householdCreatedEl.setAttribute("datetime", "");
+          householdUpdatedEl.textContent = "-";
+          householdUpdatedEl.setAttribute("datetime", "");
+          currentHouseholdId = null;
+          viewerContextEl.className = "viewer-context";
+          viewerContextEl.textContent = "Could not load user context.";
+          applyRoleDisplayState();
+          return;
+        }
+
+        const household = context.household;
+        const user = context.user;
+        const role = String(user.role || "member").toLowerCase();
+        const isManager = role === "manager" || user.is_manager === true;
+
+        currentHouseholdId = household.household_id;
+        currentUserId = user.user_id;
+        householdNameEl.textContent = household.household_name;
+        householdIdEl.textContent = String(household.household_id);
+        householdJoinCodeEl.textContent = String(household.join_code);
+        copyJoinCodeBtn.disabled = false;
+        joinCodeStatusEl.textContent = "";
+        householdCreatedEl.textContent = formatDate(household.created_at);
+        householdCreatedEl.setAttribute("datetime", household.created_at);
+        householdUpdatedEl.textContent = formatDate(household.updated_at);
+        householdUpdatedEl.setAttribute("datetime", household.updated_at);
+        viewerContextEl.className = `viewer-context ${isManager ? "manager" : "member"}`;
+        viewerContextEl.textContent = `Viewing as ${user.username} - ${isManager ? "Manager" : "Member"}`;
+        applyRoleDisplayState();
+      }
+
+      async function loadHouseholdContext() {
+        const ids = getPageContextIds();
+
+        if (ids.householdId === null || ids.userId === null) {
+          renderHouseholdContext(null);
+          accountsOutput.textContent = "Missing required query params: householdId and userId.";
+          membersOutput.innerHTML = "<li>Missing required query params: householdId and userId.</li>";
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `/api/household/context?household_id=${ids.householdId}&user_id=${ids.userId}`,
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to load household context");
+          }
+
+          const payload = await response.json();
+          renderHouseholdContext(payload);
+        } catch (_error) {
+          renderHouseholdContext(null);
+          accountsOutput.textContent = "Unable to load household context right now.";
+          membersOutput.innerHTML = "<li>Unable to load household context right now.</li>";
+        }
+      }
+
+      accountsOutput.addEventListener("click", async (event) => {
+        const target = event.target;
+
+        if (!(target instanceof HTMLButtonElement)) {
+          return;
+        }
+
+        if (target.classList.contains("copy-password-btn")) {
+          const accountId = Number(target.dataset.accountId || "");
+          if (!Number.isInteger(accountId)) {
+            statusEl.textContent = "Invalid account selected.";
+            return;
+          }
+
+          let userPasswordError = "";
+          let passwordToCopy = "";
+
+          // Keep prompting until password is verified or user cancels.
+          while (true) {
+            const userPassword = await requestUserPassword(userPasswordError);
+            if (!userPassword) {
+              statusEl.textContent = "Copy canceled.";
+              return;
+            }
+
+            statusEl.textContent = "Verifying user password...";
+
+            const revealResponse = await fetch(`/api/household/accounts/${accountId}/reveal`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ user_password: userPassword }),
+            });
+
+            if (revealResponse.status === 401) {
+              userPasswordError = "Invalid user password. Please try again.";
+              statusEl.textContent = userPasswordError;
+              continue;
+            }
+
+            if (!revealResponse.ok) {
+              const errorPayload = await revealResponse.json().catch(() => ({ error: "Could not verify user password." }));
+              throw new Error(errorPayload.error || "Could not verify user password.");
+            }
+
+            const revealPayload = await revealResponse.json();
+            passwordToCopy = typeof revealPayload.password === "string" ? revealPayload.password : "";
+
+            if (!passwordToCopy) {
+              throw new Error("No password available to copy.");
+            }
+
+            break;
+          }
+
+          try {
+            await copyTextToClipboard(passwordToCopy);
+            statusEl.textContent = "Password copied to clipboard.";
+            setCopiedState(target);
+          } catch (error) {
+            statusEl.textContent = error instanceof Error ? error.message : "Could not copy password.";
+          }
+
+          return;
+        }
+
+        if (!target.classList.contains("account-delete-btn")) {
+          return;
+        }
+
+        const accountId = Number(target.dataset.accountId || "");
+        if (!Number.isInteger(accountId)) {
+          statusEl.textContent = "Invalid account selected.";
+          return;
+        }
+
+        statusEl.textContent = "Removing account...";
+
+        try {
+          const response = await fetch(`/api/household/accounts/${accountId}`, {
+            method: "DELETE",
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to delete account");
+          }
+
+          statusEl.textContent = "Account removed.";
+          await loadAccounts();
+        } catch (_error) {
+          statusEl.textContent = "Could not remove account. Try again.";
+        }
+      });
+
+      copyJoinCodeBtn.addEventListener("click", async () => {
+        const joinCode = householdJoinCodeEl.textContent?.trim() || "";
+        if (!joinCode || joinCode === "-") {
+          joinCodeStatusEl.textContent = "No join code to copy.";
+          return;
+        }
+
+        try {
+          await navigator.clipboard.writeText(joinCode);
+          joinCodeStatusEl.textContent = "Join code copied.";
+          setCopiedState(copyJoinCodeBtn);
+        } catch (_error) {
+          joinCodeStatusEl.textContent = "Could not copy join code.";
+        }
+      });
+
+      membersOutput.addEventListener("click", async (event) => {
+        const target = event.target;
+
+        if (!(target instanceof HTMLButtonElement)) {
+          return;
+        }
+
+        const memberId = Number(target.dataset.memberId || "");
+        if (!Number.isInteger(memberId) || currentHouseholdId === null || currentUserId === null) {
+          memberStatusEl.textContent = "Invalid member selected.";
+          return;
+        }
+
+        memberStatusEl.textContent = "Removing member...";
+
+        try {
+          const response = await fetch(
+            `/api/household/members/${memberId}?household_id=${currentHouseholdId}`,
+            { method: "DELETE" },
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to remove member");
+          }
+
+          memberStatusEl.textContent = "Member removed.";
+          await loadMembers();
+        } catch (_error) {
+          memberStatusEl.textContent = "Could not remove member. Try again.";
+        }
+      });
+
+      accountsForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(accountsForm);
+        const body = {
+          household_id: currentHouseholdId,
+          service_name: String(formData.get("serviceName") || "").trim(),
+          account_identifier: String(formData.get("accountIdentifier") || "").trim(),
+          password: String(formData.get("accountPassword") || "").trim(),
+        };
+
+        if (currentHouseholdId === null) {
+          statusEl.textContent = "Select a valid household first.";
+          return;
+        }
+
+        if (!body.service_name || !body.account_identifier || !body.password) {
+          statusEl.textContent = "All fields are required.";
+          return;
+        }
+
+        if (!isEmailAddress(body.account_identifier)) {
+          statusEl.textContent = "Account must be a valid email address.";
+          return;
+        }
+
+        statusEl.textContent = "Saving account...";
+
+        try {
+          const response = await fetch("/api/household/accounts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to save account");
+          }
+
+          statusEl.textContent = "Account saved.";
+          accountsForm.reset();
+          await loadAccounts();
+        } catch (_error) {
+          statusEl.textContent = "Could not save account. Try again.";
+        }
+      });
+
+      async function initializePage() {
+        await loadHouseholdContext();
+
+        if (currentHouseholdId === null) {
+          return;
+        }
+
+        await Promise.all([loadMembers(), loadAccounts()]);
+      }
+
+      void initializePage();
+    </script>
+  </body>
+</html>

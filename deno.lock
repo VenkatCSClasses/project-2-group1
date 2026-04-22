@@ -1,7 +1,7 @@
 {
   "version": "5",
   "specifiers": {
-    "jsr:@hono/hono@^4.12.11": "4.12.11",
+    "jsr:@hono/hono@^4.12.11": "4.12.14",
     "jsr:@hono/hono@^4.12.14": "4.12.14",
     "jsr:@std/assert@^1.0.17": "1.0.19",
     "jsr:@std/assert@^1.0.19": "1.0.19",
@@ -17,9 +17,6 @@
     "npm:pg@^8.20.0": "8.20.0"
   },
   "jsr": {
-    "@hono/hono@4.12.11": {
-      "integrity": "d34149f6770d30d813ef41daa937e0e6665fd418819e1d5ab6fa06c398c5ad3c"
-    },
     "@hono/hono@4.12.14": {
       "integrity": "4eedba4b53f27c8e0db683d515e11ec3b88b8fdc1748e229cd7988d243ca018d"
     },

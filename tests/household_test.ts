@@ -8,21 +8,8 @@ async function readJson(response: Response) {
   return await response.json();
 }
 
-async function resetDatabase() {
-  await runMigrations();
-  await db.raw(`
-    TRUNCATE TABLE
-      user_vault_access,
-      shared_vault_password,
-      household_membership,
-      user_account,
-      household
-    RESTART IDENTITY CASCADE;
-  `);
-}
-
 Deno.test("household route methods", async () => {
-  await resetDatabase();
+  await runMigrations();
 
   const initialHouseholdsResponse = await householdApp.request("/");
   assertEquals(initialHouseholdsResponse.status, 200);

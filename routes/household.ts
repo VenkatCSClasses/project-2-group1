@@ -205,25 +205,28 @@ app.post("/members", async (c) => {
     return c.json({ error: "Household not found" }, 404);
   }
 
-  const [createdUser] = await db("user_account")
+  const [userId] = await db("user_account")
     .insert({
       username: body.name,
       public_key: encoder.encode("subseer-public-key"),
       password_salt: encoder.encode("subseer-salt"),
       encrypted_private_key: encoder.encode("subseer-private-key"),
-    })
-    .returning(["user_id"]);
+    });
 
-  const [createdMembership] = await db("household_membership")
+  await db("household_membership")
     .insert({
-      user_id: createdUser.user_id,
+      user_id: userId,
       household_id: body.household_id,
       role: body.role,
-    })
-    .returning(["created_at", "updated_at", "household_id", "role"]);
+    });
+
+  const createdMembership = await db("household_membership")
+    .select("created_at", "updated_at", "household_id", "role")
+    .where({ user_id: userId, household_id: body.household_id })
+    .first();
 
   const newMember: HouseholdMember = {
-    member_id: createdUser.user_id,
+    member_id: userId,
     household_id: createdMembership.household_id,
     name: body.name,
     role: createdMembership.role,
@@ -365,27 +368,19 @@ app.post("/accounts", async (c) => {
     return c.json({ error: "Household not found" }, 404);
   }
 
-  const [created] = await db("shared_vault_password")
+  const [accountId] = await db("shared_vault_password")
     .insert({
       group_id: body.household_id,
       service_name: body.service_name,
       service_username: body.account_identifier,
-    })
-    .returning([
-      "item_id as account_id",
-      "group_id as household_id",
-      "service_name",
-      "service_username as account_identifier",
-      "created_at",
-      "updated_at",
-    ]);
+    });
 
   const members = await db("household_membership")
     .select("user_id")
     .where({ household_id: body.household_id });
 
   if (members.length === 0) {
-    await db("shared_vault_password").where({ item_id: created.account_id })
+    await db("shared_vault_password").where({ item_id: accountId })
       .del();
     return c.json(
       {
@@ -398,10 +393,22 @@ app.post("/accounts", async (c) => {
   await db("user_vault_access").insert(
     members.map((member) => ({
       user_id: member.user_id,
-      item_id: created.account_id,
+      item_id: accountId,
       encrypted_service_password: encoder.encode(body.password as string),
     })),
   );
+
+  const created = await db("shared_vault_password")
+    .select(
+      "item_id as account_id",
+      "group_id as household_id",
+      "service_name",
+      "service_username as account_identifier",
+      "created_at",
+      "updated_at",
+    )
+    .where({ item_id: accountId })
+    .first();
 
   const newAccount: StreamingAccount = {
     account_id: created.account_id,
@@ -423,21 +430,25 @@ app.delete("/accounts/:accountId", async (c) => {
     return c.json({ error: "accountId must be a valid integer" }, 400);
   }
 
-  const [deletedAccount] = await db("shared_vault_password")
-    .where({ item_id: accountId })
-    .del()
-    .returning([
+  const deletedAccount = await db("shared_vault_password")
+    .select(
       "item_id as account_id",
       "group_id as household_id",
       "service_name",
       "service_username as account_identifier",
       "created_at",
       "updated_at",
-    ]);
+    )
+    .where({ item_id: accountId })
+    .first();
 
   if (!deletedAccount) {
     return c.json({ error: "Account not found" }, 404);
   }
+
+  await db("shared_vault_password")
+    .where({ item_id: accountId })
+    .del();
 
   return c.json({
     deleted: {
@@ -565,15 +576,19 @@ app.post("/", async (c) => {
     ? body.join_code
     : makeJoinCode();
 
-  const [created] = await db("household")
-    .insert({ household_name: body.household_name, join_code: joinCode })
-    .returning([
+  const [householdId] = await db("household")
+    .insert({ household_name: body.household_name, join_code: joinCode });
+
+  const created = await db("household")
+    .select(
       "household_id",
       "household_name",
       "join_code",
       "created_at",
       "updated_at",
-    ]);
+    )
+    .where({ household_id: householdId })
+    .first();
 
   const household = mapHousehold(created);
 
@@ -614,16 +629,20 @@ app.patch("/:householdId", async (c) => {
     return c.json({ error: "No updatable fields provided" }, 400);
   }
 
-  const [updated] = await db("household")
+  await db("household")
     .update(updates)
-    .where({ household_id: householdId })
-    .returning([
+    .where({ household_id: householdId });
+
+  const updated = await db("household")
+    .select(
       "household_id",
       "household_name",
       "join_code",
       "created_at",
       "updated_at",
-    ]);
+    )
+    .where({ household_id: householdId })
+    .first();
 
   const household = mapHousehold(updated);
 
@@ -637,20 +656,24 @@ app.delete("/:householdId", async (c) => {
     return c.json({ error: "householdId must be a valid integer" }, 400);
   }
 
-  const [deletedHousehold] = await db("household")
-    .where({ household_id: householdId })
-    .del()
-    .returning([
+  const deletedHousehold = await db("household")
+    .select(
       "household_id",
       "household_name",
       "join_code",
       "created_at",
       "updated_at",
-    ]);
+    )
+    .where({ household_id: householdId })
+    .first();
 
   if (!deletedHousehold) {
     return c.json({ error: "Household not found" }, 404);
   }
+
+  await db("household")
+    .where({ household_id: householdId })
+    .del();
 
   return c.json({ deleted: mapHousehold(deletedHousehold) });
 });

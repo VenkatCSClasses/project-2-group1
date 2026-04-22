@@ -145,10 +145,6 @@
         display: none;
       }
 
-      .member-remove-btn {
-        min-width: 64px;
-      }
-
       .section-title {
         margin: 0 0 7px;
       }
@@ -334,7 +330,6 @@
       const accountsOutput = document.getElementById("accounts-output");
       const accountsForm = document.getElementById("accounts-form");
       const statusEl = document.getElementById("account-status");
-      const memberStatusEl = document.getElementById("member-status");
       const viewerContextEl = document.getElementById("viewer-context");
       const managerOnlyNoteEl = document.getElementById("manager-only-note");
       const membersOutput = document.getElementById("members-output");
@@ -602,14 +597,6 @@
               <li>
                 <div class="member-row">
                   <span><strong>${escapeHtml(member.name)}</strong> - ${escapeHtml(member.role)}</span>
-                  <button
-                    type="button"
-                    class="member-remove-btn manager-view"
-                    data-member-id="${String(member.member_id)}"
-                    hidden
-                  >
-                    Remove
-                  </button>
                 </div>
               </li>
             `;
@@ -841,38 +828,6 @@
           setCopiedState(copyJoinCodeBtn);
         } catch (_error) {
           joinCodeStatusEl.textContent = "Could not copy join code.";
-        }
-      });
-
-      membersOutput.addEventListener("click", async (event) => {
-        const target = event.target;
-
-        if (!(target instanceof HTMLButtonElement)) {
-          return;
-        }
-
-        const memberId = Number(target.dataset.memberId || "");
-        if (!Number.isInteger(memberId) || currentHouseholdId === null || currentUserId === null) {
-          memberStatusEl.textContent = "Invalid member selected.";
-          return;
-        }
-
-        memberStatusEl.textContent = "Removing member...";
-
-        try {
-          const response = await fetch(
-            `/api/household/members/${memberId}?household_id=${currentHouseholdId}`,
-            { method: "DELETE" },
-          );
-
-          if (!response.ok) {
-            throw new Error("Failed to remove member");
-          }
-
-          memberStatusEl.textContent = "Member removed.";
-          await loadMembers();
-        } catch (_error) {
-          memberStatusEl.textContent = "Could not remove member. Try again.";
         }
       });
 

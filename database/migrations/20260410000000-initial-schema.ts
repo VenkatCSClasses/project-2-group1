@@ -4,22 +4,30 @@ import type { Knex } from "knex";
 
 export async function up(knex: Knex) {
   // Automatically manages timestamps from within the database
-  await knex.raw(`
-    CREATE OR REPLACE FUNCTION set_updated_at()
-    RETURNS TRIGGER AS $$
-    BEGIN
-      NEW.updated_at = NOW();
-      RETURN NEW;
-    END;
-    $$ LANGUAGE plpgsql;
-  `);
 
-  const applyUpdatedAt = (knex: Knex, table: string) =>
-    knex.raw(`
+  let applyUpdatedAt;
+  const isPostgres = knex.client.config.client === "pg";
+
+  if (isPostgres) {
+    await knex.raw(`
+      CREATE OR REPLACE FUNCTION set_updated_at()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        NEW.updated_at = NOW();
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+    `);
+
+    applyUpdatedAt = (knex: Knex, table: string) =>
+      knex.raw(`
       CREATE TRIGGER trg_${table}_updated_at
         BEFORE UPDATE ON ${table}
         FOR EACH ROW EXECUTE FUNCTION set_updated_at();
     `);
+  } else {
+    applyUpdatedAt = () => Promise.resolve();
+  }
 
   await knex.schema.createTable("household", (t) => {
     t.increments("household_id").primary();
@@ -108,5 +116,8 @@ export async function down(knex: Knex) {
   await knex.schema.dropTableIfExists("household_membership");
   await knex.schema.dropTableIfExists("user_account");
   await knex.schema.dropTableIfExists("household");
-  await knex.raw("DROP FUNCTION IF EXISTS set_updated_at CASCADE;");
+
+  if (knex.client.config.client === "pg") {
+    await knex.raw("DROP FUNCTION IF EXISTS set_updated_at CASCADE;");
+  }
 }

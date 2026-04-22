@@ -1,3 +1,5 @@
+// Written with the assistance of Claude 4.5 Haiku / Reviewed by Sam K
+
 import { describe, it } from "@std/testing/bdd";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import {

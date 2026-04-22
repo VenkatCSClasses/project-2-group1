@@ -106,7 +106,9 @@ Deno.test("household route methods", async () => {
   assertEquals(createdMember.role, "guest");
   assertEquals(createdMember.household_id, 1);
 
-  const updatedMembersResponse = await householdApp.request("/members?household_id=1");
+  const updatedMembersResponse = await householdApp.request(
+    "/members?household_id=1",
+  );
   assertEquals(updatedMembersResponse.status, 200);
 
   const updatedMembers = await readJson(updatedMembersResponse);
@@ -147,7 +149,9 @@ Deno.test("household route methods", async () => {
   assertEquals(createdAccount.password, "password123");
   assertEquals(createdAccount.household_id, 1);
 
-  const updatedAccountsResponse = await householdApp.request("/accounts?household_id=1");
+  const updatedAccountsResponse = await householdApp.request(
+    "/accounts?household_id=1",
+  );
   assertEquals(updatedAccountsResponse.status, 200);
 
   const updatedAccounts = await readJson(updatedAccountsResponse);
@@ -225,7 +229,9 @@ Deno.test("household route methods", async () => {
   );
   assertEquals(missingDeletedMemberResponse.status, 404);
 
-  const membersAfterDeleteResponse = await householdApp.request("/members?household_id=1");
+  const membersAfterDeleteResponse = await householdApp.request(
+    "/members?household_id=1",
+  );
   assertEquals(membersAfterDeleteResponse.status, 200);
 
   const membersAfterDelete = await readJson(membersAfterDeleteResponse);

@@ -26,10 +26,27 @@ This website will be primarily used by families/roommates who share different ac
 (diagrams may not be up to date)
 
 ## Use Case Diagram
-![Use Case Diagram Image](/diagrams/use_case.png)
+[Use Case Diagram Image](/diagrams/use_case.png)
 
-## Base User State Diagram
-![Base User State Diagram](/diagrams/base_user_state_diagram.png)
+## State Diagrams
+Base User State Diagram
+[Base User State Diagram](/diagrams/base_user_state_diagram.png)
+
+Household Member State Diagram
+[Household Member State Diagram](/diagrams/household_member_state_diagram.png)
+
+Household Manager State Diagram
+[Household Manager Member State Diagram](/diagrams/household_manager_state_diagram.png)
+
+## Sequence Diagrams
+User logs in and looks at account information
+[User Log In and Access Accounts](/diagrams/user_login_access_accounts.png)
+
+User registers and then joins a household
+[User Register and Joins Household](/diagrams/user_register_and_join_household.png)
+
+Manager creates a household and adds an account
+[Manager Create Household](/diagrams/manager_create_household.png)
 
 # Running the Code
 ```bash

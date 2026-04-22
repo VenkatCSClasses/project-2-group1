@@ -9,6 +9,8 @@ async function readJson(response: Response) {
 }
 
 Deno.test("household route methods", async () => {
+  await runMigrations();
+
   const initialHouseholdsResponse = await householdApp.request("/");
   assertEquals(initialHouseholdsResponse.status, 200);
 

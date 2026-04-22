@@ -36,6 +36,47 @@ type User = {
 // Route to return manager household information
 app.get("/manager-households", async (c: Context) => {
   let managerHTML: string = "test manager";
+
+  // Check log-in
+  // deno-lint-ignore no-explicit-any
+  const {loggedIn, userId} = await isLoggedIn(c as any);
+
+  // Ensure user is logged in
+  if (!loggedIn || !userId){
+    return c.html(
+      html`
+        "Error: You are not logged in. Return to login page."
+      `,
+    )
+  }
+  const userID: number = userId;
+
+  // Get households connections where user is a manager
+  const householdConnections = await db("household_membership")
+    .where({user_id: userID, role: "Manager"})
+
+  // If no households, just return a string
+  if (!householdConnections){
+    return c.html(
+      html`
+        "You are not a manager in any household."
+      `,
+    )
+  }
+
+  // Get households from those connections
+  for (const householdConn of householdConnections){
+    const household = await db("household")
+      .where({household_id: householdConn.household_id})
+      
+    // Convert household objects into individual divs
+      // Name of household
+      // Number of members TODO
+      // Number of accounts TODO
+      // Button to view household
+  }
+
+  // Return html
   return c.html(
     html`
         <p>${managerHTML}</p>
@@ -46,6 +87,47 @@ app.get("/manager-households", async (c: Context) => {
 // Route to return member household information
 app.get("/member-households", async (c: Context) => {
   let memberHTML: string = "test member";
+
+  // Check log-in
+  // deno-lint-ignore no-explicit-any
+  const {loggedIn, userId} = await isLoggedIn(c as any);
+
+  // Ensure user is logged in
+  if (!loggedIn || !userId){
+    return c.html(
+      html`
+        "Error: You are not logged in. Return to login page."
+      `,
+    )
+  }
+  const userID: number = userId;
+
+  // Get households connections where user is a member
+  const householdConnections = await db("household_membership")
+    .where({user_id: userID, role: "Member"})
+
+  // If no households, just return a string
+  if (!householdConnections){
+    return c.html(
+      html`
+        "You are not a member in any household."
+      `,
+    )
+  }
+
+  // Get households from those connections
+  for (const householdConn of householdConnections){
+    const household = await db("household")
+      .where({household_id: householdConn.household_id})
+
+    // Convert household objects into individual divs
+      // Name of household
+      // Number of members TODO
+      // Number of accounts TODO
+      // Button to view household
+  }
+
+  // Return html
   return c.html(
     html`
         <p>${memberHTML}</p>

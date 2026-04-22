@@ -43,10 +43,15 @@
                 </section>
             </section>
             <section class="viewHouseholds">
-                <h2>Household View</h2>
-                <div id="viewHouseholds">
-                    <a href="/api/homepage/household-view">Click to view households!</a>
-                </div>
+                <h2>View Households</h2>
+                <section id="managerHouseholds">
+                    <h3>Manager Households</h3>
+                    <div id="responseManager" hx-get="/api/homepage/manager-households" hx-trigger="load" hx-swap="innerHTML"></div>
+                </section>
+                <section id="memberHouseholds">
+                    <h3>Member Households</h3>
+                    <div id="responseMember" hx-get="/api/homepage/member-households" hx-trigger="load" hx-swap="innerHTML"></div>
+                </section>
             </section>
         </main>
 </html>

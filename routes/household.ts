@@ -86,6 +86,50 @@ function makeJoinCode() {
   return Math.floor(100000 + Math.random() * 900000);
 }
 
+function readInsertedId(result: unknown, key: string): number | null {
+  const parseValue = (value: unknown): number | null => {
+    if (typeof value === "number" && Number.isInteger(value)) {
+      return value;
+    }
+
+    if (typeof value === "string") {
+      const parsed = Number(value);
+      return Number.isInteger(parsed) ? parsed : null;
+    }
+
+    return null;
+  };
+
+  if (Array.isArray(result)) {
+    if (result.length === 0) {
+      return null;
+    }
+
+    const first = result[0];
+    const direct = parseValue(first);
+    if (direct !== null) {
+      return direct;
+    }
+
+    if (first && typeof first === "object") {
+      return parseValue((first as Record<string, unknown>)[key]);
+    }
+
+    return null;
+  }
+
+  const direct = parseValue(result);
+  if (direct !== null) {
+    return direct;
+  }
+
+  if (result && typeof result === "object") {
+    return parseValue((result as Record<string, unknown>)[key]);
+  }
+
+  return null;
+}
+
 function mapHousehold(row: {
   household_id: number;
   household_name: string;
@@ -205,13 +249,18 @@ app.post("/members", async (c) => {
     return c.json({ error: "Household not found" }, 404);
   }
 
-  const [userId] = await db("user_account")
+  const insertedUser = await db("user_account")
     .insert({
       username: body.name,
       public_key: encoder.encode("subseer-public-key"),
       password_salt: encoder.encode("subseer-salt"),
       encrypted_private_key: encoder.encode("subseer-private-key"),
-    });
+    }, ["user_id"]);
+
+  const userId = readInsertedId(insertedUser, "user_id");
+  if (userId === null) {
+    return c.json({ error: "Failed to create household member" }, 500);
+  }
 
   await db("household_membership")
     .insert({
@@ -368,12 +417,17 @@ app.post("/accounts", async (c) => {
     return c.json({ error: "Household not found" }, 404);
   }
 
-  const [accountId] = await db("shared_vault_password")
+  const insertedAccount = await db("shared_vault_password")
     .insert({
       group_id: body.household_id,
       service_name: body.service_name,
       service_username: body.account_identifier,
-    });
+    }, ["item_id"]);
+
+  const accountId = readInsertedId(insertedAccount, "item_id");
+  if (accountId === null) {
+    return c.json({ error: "Failed to create account" }, 500);
+  }
 
   const members = await db("household_membership")
     .select("user_id")
@@ -430,6 +484,11 @@ app.delete("/accounts/:accountId", async (c) => {
     return c.json({ error: "accountId must be a valid integer" }, 400);
   }
 
+  const { loggedIn, userId } = await isLoggedIn(c);
+  if (!loggedIn || !userId) {
+    return c.json({ error: "You must be logged in" }, 401);
+  }
+
   const deletedAccount = await db("shared_vault_password")
     .select(
       "item_id as account_id",
@@ -444,6 +503,22 @@ app.delete("/accounts/:accountId", async (c) => {
 
   if (!deletedAccount) {
     return c.json({ error: "Account not found" }, 404);
+  }
+
+  const requesterMembership = await db("household_membership")
+    .select("role")
+    .where({
+      user_id: userId,
+      household_id: deletedAccount.household_id,
+    })
+    .first();
+
+  if (!requesterMembership) {
+    return c.json({ error: "User is not a member of this household" }, 403);
+  }
+
+  if (normalizeRole(String(requesterMembership.role)) !== "manager") {
+    return c.json({ error: "Only managers can delete accounts" }, 403);
   }
 
   await db("shared_vault_password")
@@ -576,8 +651,15 @@ app.post("/", async (c) => {
     ? body.join_code
     : makeJoinCode();
 
-  const [householdId] = await db("household")
-    .insert({ household_name: body.household_name, join_code: joinCode });
+  const insertedHousehold = await db("household")
+    .insert({ household_name: body.household_name, join_code: joinCode }, [
+      "household_id",
+    ]);
+
+  const householdId = readInsertedId(insertedHousehold, "household_id");
+  if (householdId === null) {
+    return c.json({ error: "Failed to create household" }, 500);
+  }
 
   const created = await db("household")
     .select(

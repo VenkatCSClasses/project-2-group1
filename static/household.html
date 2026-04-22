@@ -141,7 +141,7 @@
         gap: 8px;
       }
 
-      .manager-view {
+      .manager-view[hidden] {
         display: none;
       }
 
@@ -353,6 +353,7 @@
       const passwordModalError = document.getElementById("password-modal-error");
       let currentHouseholdId = null;
       let currentUserId = null;
+      let currentUserIsManager = false;
 
       function escapeHtml(value) {
         return String(value)
@@ -406,8 +407,18 @@
       }
 
       function applyRoleDisplayState(isManager) {
+        currentUserIsManager = Boolean(isManager);
         accountsForm.style.display = "grid";
-        managerOnlyNoteEl.textContent = "-"
+        managerOnlyNoteEl.textContent = currentUserIsManager
+          ? "Manager tools are enabled."
+          : "Member view: you can add accounts, but only managers can delete them.";
+        applyManagerVisibilityToControls();
+      }
+
+      function applyManagerVisibilityToControls() {
+        document.querySelectorAll(".manager-view").forEach((el) => {
+          el.hidden = !currentUserIsManager;
+        });
       }
 
       function renderAccounts(accounts) {
@@ -432,7 +443,7 @@
                 </button>
               </td>
               <td>
-                <button type="button" class="account-delete-btn manager-view" data-account-id="${String(account.account_id)}">Delete</button>
+                <button type="button" class="account-delete-btn manager-view" data-account-id="${String(account.account_id)}" hidden>Delete</button>
               </td>
             </tr>
           `;
@@ -451,6 +462,8 @@
             <tbody>${rows}</tbody>
           </table>
         `;
+
+        applyManagerVisibilityToControls();
       }
 
       function isEmailAddress(value) {
@@ -593,6 +606,7 @@
                     type="button"
                     class="member-remove-btn manager-view"
                     data-member-id="${String(member.member_id)}"
+                    hidden
                   >
                     Remove
                   </button>
@@ -601,6 +615,8 @@
             `;
           })
           .join("");
+
+        applyManagerVisibilityToControls();
       }
 
       async function loadMembers() {
@@ -645,7 +661,7 @@
           currentHouseholdId = null;
           viewerContextEl.className = "viewer-context";
           viewerContextEl.textContent = "Could not load user context.";
-          applyRoleDisplayState();
+          applyRoleDisplayState(false);
           return;
         }
 
@@ -668,10 +684,7 @@
         householdUpdatedEl.setAttribute("datetime", household.updated_at);
         viewerContextEl.className = `viewer-context ${isManager ? "manager" : "member"}`;
         viewerContextEl.textContent = `Viewing as ${user.username} - ${isManager ? "Manager" : "Member"}`;
-        document.querySelectorAll(".manager-view").forEach((el) => {
-          el.hidden = !isManager;
-        });
-        applyRoleDisplayState();
+        applyRoleDisplayState(isManager);
       }
 
       async function loadHouseholdContext() {
@@ -789,6 +802,11 @@
         const accountId = Number(target.dataset.accountId || "");
         if (!Number.isInteger(accountId)) {
           statusEl.textContent = "Invalid account selected.";
+          return;
+        }
+
+        if (!currentUserIsManager) {
+          statusEl.textContent = "Only managers can delete accounts.";
           return;
         }
 

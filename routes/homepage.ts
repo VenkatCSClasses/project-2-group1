@@ -34,82 +34,131 @@ type User = {
 
 
 // Route to return manager household information
+// Assisted by Gemini 3.1 Pro
 app.get("/manager-households", async (c: Context) => {
+  let managerHTML: string = "";
+
+  // Check log-in
   // deno-lint-ignore no-explicit-any
-  const { loggedIn, userId } = await isLoggedIn(c as any);
-  
-  if (!loggedIn || userId === undefined) {
+  const {loggedIn, userId} = await isLoggedIn(c as any);
+
+  // Ensure user is logged in
+  if (!loggedIn || !userId){
     return c.html(
-      html`<p>Not logged in</p>`
-    );
+      html`
+        "Error: You are not logged in. Return to login page."
+      `,
+    )
+  }
+  const userID: number = userId;
+
+  // Get households connections where user is a manager
+  const householdConnections = await db("household_membership")
+    .where({user_id: userID, role: "Manager"})
+
+  // If no households, just return a string
+  if (householdConnections.length === 0){
+    return c.html(
+      html`
+        "You are not a manager in any household."
+      `,
+    )
   }
 
-  // Query households where user is a manager
-  const households = await db<Household>("household")
-    .join("household_membership", "household.household_id", "=", "household_membership.household_id")
-    .where("household_membership.user_id", userId)
-    .where("household_membership.role", "manager")
-    .select("household.household_id", "household.household_name", "household.join_code");
-  
-  if (households.length === 0) {
-    return c.html(
-      html`<p>No manager households</p>`
-    );
+  // Get households from those connections
+  for (const householdConn of householdConnections){
+    const household = await db("household")
+      .where({household_id: householdConn.household_id})
+      .first();
+
+    const memberCountRes = await db("household_membership")
+      .where({household_id: householdConn.household_id})
+      .count('* as count').first();
+    
+    const accountCountRes = await db("shared_vault_password")
+      .where({group_id: householdConn.household_id})
+      .count('* as count').first();
+    
+    const numMembers = memberCountRes?.count || 0;
+    const numAccounts = accountCountRes?.count || 0;
+
+    // Convert household objects into individual divs
+    managerHTML += `
+      <div class="household-card">
+        <h3>${household.household_name} (ID: ${household.household_id})</h3>
+        Members: ${numMembers} |
+        Accounts: ${numAccounts} |
+        <a href="/household?householdId=${household.household_id}&userId=${userID}" class="btn">View Household Details</a>
+      </div>
+    `;
   }
 
-  let managerHTML = `<ul>`;
-  for (const household of households) {
-    managerHTML += `<li>
-      <a href="/household?household_id=${household.household_id}&user_id=${userId}">
-        ${household.household_name} (Code: ${household.join_code})
-      </a>
-    </li>`;
-  }
-  managerHTML += `</ul>`;
-  
+  // Return html
   return c.html(managerHTML);
 });
 
 // Route to return member household information
+// Assisted by Gemini 3.1 Pro
 app.get("/member-households", async (c: Context) => {
+  let memberHTML: string = "";
+
+  // Check log-in
   // deno-lint-ignore no-explicit-any
-  const { loggedIn, userId } = await isLoggedIn(c as any);
-  
-  if (!loggedIn || userId === undefined) {
+  const {loggedIn, userId} = await isLoggedIn(c as any);
+
+  // Ensure user is logged in
+  if (!loggedIn || !userId){
     return c.html(
-      html`<p>Not logged in</p>`
-    );
+      html`
+        "Error: You are not logged in. Return to login page."
+      `,
+    )
+  }
+  const userID: number = userId;
+
+  // Get households connections where user is a member
+  const householdConnections = await db("household_membership")
+    .where({user_id: userID, role: "Member"})
+
+  // If no households, just return a string
+  if (householdConnections.length === 0){
+    return c.html(
+      html`
+        "You are not a member in any household."
+      `,
+    )
   }
 
-  try {
-    // Query households where user is a member
-    const households = await db<Household>("household")
-      .join("household_membership", "household.household_id", "=", "household_membership.household_id")
-      .where("household_membership.user_id", userId)
-      .where("household_membership.role", "member")
-      .select("household.household_id", "household.household_name", "household.join_code");
-    
-    if (households.length === 0) {
-      return c.html(
-        html`<p>No member households</p>`
-      );
-    }
+  // Get households from those connections
+  for (const householdConn of householdConnections){
+    const household = await db("household")
+      .where({household_id: householdConn.household_id})
+      .first();
 
-    let memberHTML = `<ul>`;
-    for (const household of households) {
-      memberHTML += `<li>
-        <a href="/household?household_id=${household.household_id}&user_id=${userId}">
-          ${household.household_name} (Code: ${household.join_code})
-        </a>
-      </li>`;
-    }
-    memberHTML += `</ul>`;
+    const memberCountRes = await db("household_membership")
+      .where({household_id: householdConn.household_id})
+      .count('* as count').first();
     
-    return c.html(memberHTML);
-  } catch (error) {
-    console.error("Error in member-households:", error);
-    return c.html(`<p>Error: ${error}</p>`);
+    const accountCountRes = await db("shared_vault_password")
+      .where({group_id: householdConn.household_id})
+      .count('* as count').first();
+    
+    const numMembers = memberCountRes?.count || 0;
+    const numAccounts = accountCountRes?.count || 0;
+
+    // Convert household objects into individual divs
+    memberHTML += `
+      <div class="household-card">
+        <h3>${household.household_name} (ID: ${household.household_id})</h3>
+        Members: ${numMembers} |
+        Accounts: ${numAccounts} |
+        <a href="/household?householdId=${household.household_id}&userId=${userID}" class="btn">View Household Details</a>
+      </div>
+    `;
   }
+
+  // Return html
+  return c.html(memberHTML);
 });
 
 app.get("/leave-dropdown", async (c: Context) => {
@@ -366,9 +415,9 @@ app.post("/leave-household", async (c: Context) => {
   const users = await db<HouseholdMembership>("household_membership")
     .where({household_id: householdID});
 
-  if (connection.role === "Manager"){
+  if (connection.role === "Manager" && users.length > 1){
     for (const user of users){
-      if (user.role === "Manager"){
+      if (user.role === "Manager" && user.user_id !== userID){
         otherManager = true;
         break;
       }

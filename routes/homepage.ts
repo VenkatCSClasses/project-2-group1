@@ -161,65 +161,6 @@ app.get("/member-households", async (c: Context) => {
 });
 
 app.get("/leave-dropdown", async (c: Context) => {
-  // deno-lint-ignore no-explicit-any
-  const { loggedIn, userId } = await isLoggedIn(c as any);
-
-  // Ensure user is logged in
-  if (!loggedIn || !userId) {
-    return c.html(
-      html`
-        "Error: You are not logged in. Return to login page."
-      `,
-    );
-  }
-  const userID: number = userId;
-
-  // Get households connections where user is a member
-  const householdConnections = await db("household_membership")
-    .where({ user_id: userID, role: "Member" });
-
-  // If no households, just return a string
-  if (householdConnections.length === 0) {
-    return c.html(
-      html`
-        "You are not a member in any household."
-      `,
-    );
-  }
-
-  // Get households from those connections
-  for (const householdConn of householdConnections) {
-    const household = await db("household")
-      .where({ household_id: householdConn.household_id })
-      .first();
-
-    const memberCountRes = await db("household_membership")
-      .where({ household_id: householdConn.household_id })
-      .count("* as count").first();
-
-    const accountCountRes = await db("shared_vault_password")
-      .where({ group_id: householdConn.household_id })
-      .count("* as count").first();
-
-    const numMembers = memberCountRes?.count || 0;
-    const numAccounts = accountCountRes?.count || 0;
-
-    // Convert household objects into individual divs
-    return c.html(html`
-      <div class="household-card">
-        <h3>${household.household_name} (ID: ${household.household_id})</h3>
-        Members: ${numMembers} | Accounts: ${numAccounts} |
-        <a href="/household?householdId=${household
-          .household_id}&userId=${userID}" class="btn"
-        >View Household Details</a>
-      </div>
-    `);
-  }
-
-  return c.html("<p></p>");
-});
-
-app.get("/leave-dropdown", async (c: Context) => {
   let dropdownHTML: string = "";
   // deno-lint-ignore no-explicit-any
   const { loggedIn, userId } = await isLoggedIn(c as any);
@@ -457,7 +398,7 @@ app.post("/create-household", async (c: Context) => {
 app.post("/leave-household", async (c: Context) => {
   const body = await c.req.parseBody();
 
-  const { loggedIn, userId } = await isLoggedIn(c as any);
+  const { loggedIn, userId } = await isLoggedIn(c);
 
   // Ensure user is logged in
   if (!loggedIn || !userId) {

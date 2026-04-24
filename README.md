@@ -1,8 +1,10 @@
 # SubSeer: The Household Account Manager
 
-SubSeer is a website that allows users to create and join ‘households’, being able to add and access shared account information. There are two levels of users in each household: managers and members. Managers are able to delete the household, add/remove members, promote/demote managers, add/edit/remove accounts, and review account requests. They can also remove members from being able to view account credentials. Members are able to create requests for new accounts to be stored/created, and they can view account information for ones they have access to.
+SubSeer is a website that allows users to create and join ‘households’, being able to add and access shared account information. There are two levels of users in each household: managers and members. Managers are able to delete the household, add/remove members, promote/demote managers, add/edit/remove accounts, and review account requests. They can also remove members from being able to view account credentials. Members are able to add new accounts, and they can view account information for ones they have access to.
 <br><br>
 This website will be primarily used by families/roommates who share different accounts and want one localized place to store account information. It will streamline the communication between members of those groups by allowing everyone to see account information in one place, instead of having to ask around for different credentials. If account credentials are changed for a subscription, all the managers have to do is just update the subscription on SubSeer, then the members with valid permissions can see the new updated account credentials, instead of having to pester others to find them out.
+<br><br>
+We implemented this using TypeScript and HTML. For runtime, we used Deno since it supports TypeScript better than Node.js, has built in security measures, and more tools to aid our process.
 <br><br>
 *Name is subject to change.*
 <br><br>
@@ -17,36 +19,29 @@ This website will be primarily used by families/roommates who share different ac
 <br>
 
 # Documents
-
 [Sprint 1 Review](./documentation/post_sprint/sprint_one_review.pdf) <br>
-[Sprint 1 Retrospective](./documentation/post_sprint/sprint_one_retrospective.pdf)
+[Sprint 1 Retrospective](./documentation/post_sprint/sprint_one_retrospective.pdf)<br>
+[Sprint 2 Review](./documentation/post_sprint/sprint_two_review.pdf)
 
 
 # Diagrams
-(diagrams may not be up to date)
 
 ## Use Case Diagram
 [Use Case Diagram Image](/diagrams/use_case.png)
 
 ## State Diagrams
-Base User State Diagram
 [Base User State Diagram](/diagrams/base_user_state_diagram.png)
 
-Household Member State Diagram
 [Household Member State Diagram](/diagrams/household_member_state_diagram.png)
 
-Household Manager State Diagram
-[Household Manager Member State Diagram](/diagrams/household_manager_state_diagram.png)
+[Household Manager State Diagram](/diagrams/household_manager_state_diagram.png)
 
 ## Sequence Diagrams
-User logs in and looks at account information
-[User Log In and Access Accounts](/diagrams/user_login_access_accounts.png)
+[User logs in and looks at account information](/diagrams/user_login_access_accounts.png)
 
-User registers and then joins a household
-[User Register and Joins Household](/diagrams/user_register_and_join_household.png)
+[User registers and then joins a household](/diagrams/user_register_and_join_household.png)
 
-Manager creates a household and adds an account
-[Manager Create Household](/diagrams/manager_create_household.png)
+[Manager creates a household and adds an account](/diagrams/manager_create_household.png)
 
 # Running the Code
 ```bash

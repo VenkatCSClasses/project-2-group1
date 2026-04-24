@@ -4,7 +4,7 @@ sequenceDiagram
     participant Server
     participant Database
 
-    Member->>Server: Register with email and password
+    Member->>Server: Register with username and password
     Server->>Database: Store member information
     Server-->>Member: Registration successful
     Member->>Manager: Request to join household (outside of app)

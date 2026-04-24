@@ -3,8 +3,6 @@ import { secureHeaders } from "@hono/hono/secure-headers";
 import { logger } from "@hono/hono/logger";
 import { showRoutes } from "@hono/hono/dev";
 import { serveStatic } from "@hono/hono/deno";
-import { setJWTCookie } from "./cryptography.ts";
-import { db } from "./database/knex.ts";
 import { trimTrailingSlash } from "@hono/hono/trailing-slash";
 import accountRoutes from "./routes/account.ts";
 import keychainRoutes from "./routes/keychain.ts";
@@ -22,6 +20,8 @@ const app = new Hono();
 app.use(secureHeaders({
   contentSecurityPolicy: {
     defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", "'unsafe-inline'"],
+    styleSrc: ["'self'", "'unsafe-inline'"],
   },
 }));
 

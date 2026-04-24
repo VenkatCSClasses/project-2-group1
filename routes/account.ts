@@ -2,7 +2,6 @@ import { Context, Hono } from "@hono/hono";
 import { html } from "@hono/hono/html";
 import { db } from "../database/knex.ts";
 import { Result } from "pg";
-import { Buffer } from "node:buffer";
 import {
   generateAccountSecrets,
   importPublicKey,
@@ -196,7 +195,7 @@ app.post("/login", async (c) => {
     const passwordSalt: Uint8Array = selectResult.password_salt;
     const encryptedPrivateKey: Uint8Array = selectResult.encrypted_private_key;
     const publicKey: CryptoKey = await importPublicKey(
-      Buffer.from(selectResult.public_key),
+      new Uint8Array(selectResult.public_key),
     );
 
     const privateKey = await unlockKey(

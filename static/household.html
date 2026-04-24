@@ -6,10 +6,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Household Route</title>
-    <link rel="stylesheet" href="https://unpkg.com/98.css">
+    <link rel="stylesheet" href="/selfcsp/98.css">
     <style>
       html {
-        background-color: #a8ea90;
+        background-color: #008080;
       }
 
       body {
@@ -33,7 +33,7 @@
       }
 
       .window {
-        box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.2);
+        box-shadow: 2px 2px 0 #000;
       }
 
       .window-body {
@@ -47,8 +47,8 @@
 
       .section-panel {
         padding: 12px;
-        border: 2px groove #dfdfdf;
-        background: #fff;
+        border: 2px inset #fff;
+        background: #c0c0c0;
       }
 
       .top-grid {
@@ -141,8 +141,8 @@
         gap: 8px;
       }
 
-      .member-remove-btn {
-        min-width: 64px;
+      .manager-view[hidden] {
+        display: none;
       }
 
       .section-title {
@@ -152,17 +152,17 @@
       .viewer-context {
         margin: 0 0 10px;
         padding: 8px 10px;
-        border: 1px solid #7e7e7e;
-        background: #eef6e8;
+        border: 2px inset #fff;
+        background: #c0c0c0;
         font-weight: 700;
       }
 
       .viewer-context.manager {
-        background: #e6f4ff;
+        background: #d6e7f5;
       }
 
       .viewer-context.member {
-        background: #fff6df;
+        background: #efe9d2;
       }
 
       .manager-only-note {
@@ -181,11 +181,11 @@
       }
 
       .members {
-        background: #f4f4f4;
+        background: #c0c0c0;
       }
 
       .overview {
-        background: #fcfcfc;
+        background: #c0c0c0;
       }
 
       .password-modal-overlay {
@@ -250,8 +250,8 @@
                 <dt>Household ID:</dt>
                 <dd id="household-id">-</dd>
 
-                <dt>Join Code:</dt>
-                <dd>
+                <dt class="manager-view" hidden>Join Code:</dt>
+                <dd class="manager-view" hidden>
                   <span class="join-code-wrap">
                     <span id="household-join-code">-</span>
                     <button id="copy-join-code-btn" class="join-code-copy-btn" type="button" disabled>
@@ -284,7 +284,7 @@
 
           <section class="accounts section-panel" aria-label="Account placeholders">
             <h3 class="section-title">Shared Vault Passwords</h3>
-            <form id="accounts-form" class="accounts-form" aria-label="Add streaming account">
+            <form id="accounts-form" class="accounts-form" aria-label="Add streaming account" >
               <label for="service-name">Service</label>
               <input id="service-name" name="serviceName" type="text" placeholder="Netflix" required autocomplete="organization">
 
@@ -330,7 +330,6 @@
       const accountsOutput = document.getElementById("accounts-output");
       const accountsForm = document.getElementById("accounts-form");
       const statusEl = document.getElementById("account-status");
-      const memberStatusEl = document.getElementById("member-status");
       const viewerContextEl = document.getElementById("viewer-context");
       const managerOnlyNoteEl = document.getElementById("manager-only-note");
       const membersOutput = document.getElementById("members-output");
@@ -349,6 +348,7 @@
       const passwordModalError = document.getElementById("password-modal-error");
       let currentHouseholdId = null;
       let currentUserId = null;
+      let currentUserIsManager = false;
 
       function escapeHtml(value) {
         return String(value)
@@ -388,21 +388,32 @@
 
         const householdRaw = readParam(searchParams, [
           "householdId",
+          "householdID",
           "household_id",
+          "household_Id",
           "househildId",
           "househild_id",
         ]);
-        const userRaw = readParam(searchParams, ["userId", "user_id"]);
-
+        const userRaw = readParam(searchParams, ["userId", "userID", "user_id"]);
         return {
           householdId: parsePositiveInteger(householdRaw),
           userId: parsePositiveInteger(userRaw),
         };
       }
 
-      function applyRoleDisplayState() {
+      function applyRoleDisplayState(isManager) {
+        currentUserIsManager = Boolean(isManager);
         accountsForm.style.display = "grid";
-        managerOnlyNoteEl.textContent = "";
+        managerOnlyNoteEl.textContent = currentUserIsManager
+          ? "Manager tools are enabled."
+          : "Member view: you can add accounts, but only managers can delete them.";
+        applyManagerVisibilityToControls();
+      }
+
+      function applyManagerVisibilityToControls() {
+        document.querySelectorAll(".manager-view").forEach((el) => {
+          el.hidden = !currentUserIsManager;
+        });
       }
 
       function renderAccounts(accounts) {
@@ -427,7 +438,7 @@
                 </button>
               </td>
               <td>
-                <button type="button" class="account-delete-btn" data-account-id="${String(account.account_id)}">Delete</button>
+                <button type="button" class="account-delete-btn manager-view" data-account-id="${String(account.account_id)}" hidden>Delete</button>
               </td>
             </tr>
           `;
@@ -446,6 +457,8 @@
             <tbody>${rows}</tbody>
           </table>
         `;
+
+        applyManagerVisibilityToControls();
       }
 
       function isEmailAddress(value) {
@@ -584,18 +597,13 @@
               <li>
                 <div class="member-row">
                   <span><strong>${escapeHtml(member.name)}</strong> - ${escapeHtml(member.role)}</span>
-                  <button
-                    type="button"
-                    class="member-remove-btn"
-                    data-member-id="${String(member.member_id)}"
-                  >
-                    Remove
-                  </button>
                 </div>
               </li>
             `;
           })
           .join("");
+
+        applyManagerVisibilityToControls();
       }
 
       async function loadMembers() {
@@ -640,7 +648,7 @@
           currentHouseholdId = null;
           viewerContextEl.className = "viewer-context";
           viewerContextEl.textContent = "Could not load user context.";
-          applyRoleDisplayState();
+          applyRoleDisplayState(false);
           return;
         }
 
@@ -649,6 +657,7 @@
         const role = String(user.role || "member").toLowerCase();
         const isManager = role === "manager" || user.is_manager === true;
 
+        
         currentHouseholdId = household.household_id;
         currentUserId = user.user_id;
         householdNameEl.textContent = household.household_name;
@@ -662,34 +671,49 @@
         householdUpdatedEl.setAttribute("datetime", household.updated_at);
         viewerContextEl.className = `viewer-context ${isManager ? "manager" : "member"}`;
         viewerContextEl.textContent = `Viewing as ${user.username} - ${isManager ? "Manager" : "Member"}`;
-        applyRoleDisplayState();
+        applyRoleDisplayState(isManager);
       }
 
       async function loadHouseholdContext() {
         const ids = getPageContextIds();
 
-        if (ids.householdId === null || ids.userId === null) {
+        if (ids.householdId === null) {
           renderHouseholdContext(null);
-          accountsOutput.textContent = "Missing required query params: householdId and userId.";
-          membersOutput.innerHTML = "<li>Missing required query params: householdId and userId.</li>";
+          accountsOutput.textContent = "Missing required query param: householdId.";
+          membersOutput.innerHTML = "<li>Missing required query param: householdId.</li>";
           return;
         }
 
         try {
+          const contextQuery = new URLSearchParams({
+            household_id: String(ids.householdId),
+          });
+
+          if (ids.userId !== null) {
+            contextQuery.set("user_id", String(ids.userId));
+          }
+
           const response = await fetch(
-            `/api/household/context?household_id=${ids.householdId}&user_id=${ids.userId}`,
+            `/api/household/context?${contextQuery.toString()}`,
           );
 
           if (!response.ok) {
-            throw new Error("Failed to load household context");
+            const errorPayload = await response.json().catch(() => ({}));
+            const errorMessage = typeof errorPayload.error === "string"
+              ? errorPayload.error
+              : "Failed to load household context";
+            throw new Error(`${errorMessage} (HTTP ${response.status})`);
           }
 
           const payload = await response.json();
           renderHouseholdContext(payload);
-        } catch (_error) {
+        } catch (error) {
+          const message = error instanceof Error
+            ? error.message
+            : "Unable to load household context right now.";
           renderHouseholdContext(null);
-          accountsOutput.textContent = "Unable to load household context right now.";
-          membersOutput.innerHTML = "<li>Unable to load household context right now.</li>";
+          accountsOutput.textContent = message;
+          membersOutput.innerHTML = `<li>${escapeHtml(message)}</li>`;
         }
       }
 
@@ -768,6 +792,11 @@
           return;
         }
 
+        if (!currentUserIsManager) {
+          statusEl.textContent = "Only managers can delete accounts.";
+          return;
+        }
+
         statusEl.textContent = "Removing account...";
 
         try {
@@ -799,38 +828,6 @@
           setCopiedState(copyJoinCodeBtn);
         } catch (_error) {
           joinCodeStatusEl.textContent = "Could not copy join code.";
-        }
-      });
-
-      membersOutput.addEventListener("click", async (event) => {
-        const target = event.target;
-
-        if (!(target instanceof HTMLButtonElement)) {
-          return;
-        }
-
-        const memberId = Number(target.dataset.memberId || "");
-        if (!Number.isInteger(memberId) || currentHouseholdId === null || currentUserId === null) {
-          memberStatusEl.textContent = "Invalid member selected.";
-          return;
-        }
-
-        memberStatusEl.textContent = "Removing member...";
-
-        try {
-          const response = await fetch(
-            `/api/household/members/${memberId}?household_id=${currentHouseholdId}`,
-            { method: "DELETE" },
-          );
-
-          if (!response.ok) {
-            throw new Error("Failed to remove member");
-          }
-
-          memberStatusEl.textContent = "Member removed.";
-          await loadMembers();
-        } catch (_error) {
-          memberStatusEl.textContent = "Could not remove member. Try again.";
         }
       });
 

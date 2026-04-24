@@ -32,6 +32,46 @@ type User = {
   password_hash: Uint8Array;
 }
 
+// Route to return username of currently logged in user
+app.get("/get-username", async (c: Context) => {
+  // Check log-in
+  // deno-lint-ignore no-explicit-any
+  const {loggedIn, userId} = await isLoggedIn(c as any);
+
+  // Ensure user is logged in
+  if (!loggedIn || !userId){
+    return c.html(
+      html`
+        "Error: You are not logged in. Return to login page."
+      `,
+    )
+  }
+  const userID: number = userId;
+
+  // Retrieve username
+  const user = await db("user_account")
+    .select("username")
+    .where({user_id: userID})
+    .first();
+  
+  // Ensure user is returned properly
+  if (!user){
+    return c.html(
+      html`
+        "Error: Username not found."
+      `,
+    )
+  }
+
+  const username = user.username;
+
+  return c.html(
+      html`
+        Currently logged in as: ${username} 
+      `,
+  )
+});
+
 
 // Route to return manager household information
 // Assisted by Gemini 3.1 Pro

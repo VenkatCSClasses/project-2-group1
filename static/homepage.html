@@ -8,8 +8,11 @@
         <main>
             <header>
                 <h1>Home Page</h1>
-                <!--Edit/view profile and logout buttons-->
             </header>
+            <section class="userInfo">
+                <div id="username" hx-get="/api/homepage/get-username" hx-trigger="load" hx-swap="outerHTML"></div>
+                <button hx-post="/api/account/logout">Logout</button>
+            </section>
             <section class="modifyHouseholds">
                 <h2>Modify Households</h2>
                 <section class="createHousehold" aria-label="Create Household Form"></section>

@@ -363,7 +363,7 @@ app.post("/create-household", async (c: Context) => {
   let tempHousehold: Household | undefined;
 
   do {
-    joinCode = Math.floor(Math.random() * 1000000);
+    joinCode = Math.floor(100000 + Math.random() * 900000);
 
     // Check and see if join code exists
     tempHousehold = await db<Household>("household")

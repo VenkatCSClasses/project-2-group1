@@ -4,7 +4,7 @@ SubSeer is a website that allows users to create and join ‘households’, bein
 <br><br>
 This website will be primarily used by families/roommates who share different accounts and want one localized place to store account information. It will streamline the communication between members of those groups by allowing everyone to see account information in one place, instead of having to ask around for different credentials. If account credentials are changed for a subscription, all the managers have to do is just update the subscription on SubSeer, then the members with valid permissions can see the new updated account credentials, instead of having to pester others to find them out.
 <br><br>
-We implemented this using TypeScript and HTML. For runtime, we used Deno since it supports TypeScript better than Node.js, has built in security measures, and more tools to aid our process.
+We implemented this using TypeScript and HTML. For runtime, we used Deno since it supports TypeScript better than Node.js, has built in security measures, and more tools to aid our process. License is CC0 1.0 Universal License, due to the use of LLMs to write tests and assist in coding.
 <br><br>
 *Name is subject to change.*
 <br><br>
@@ -30,6 +30,8 @@ We implemented this using TypeScript and HTML. For runtime, we used Deno since i
 [Use Case Diagram Image](/diagrams/use_case.png)
 
 ## State Diagrams
+[General User State Diagram](/diagrams/user_state_diagram.png)
+
 [Base User State Diagram](/diagrams/base_user_state_diagram.png)
 
 [Household Member State Diagram](/diagrams/household_member_state_diagram.png)

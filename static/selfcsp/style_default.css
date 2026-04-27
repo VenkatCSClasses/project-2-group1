@@ -11,6 +11,7 @@ body {
 
 .full-width {
     width: 100%;
+    box-sizing: border-box;
 }
 
 .center-horizontally {
@@ -40,7 +41,7 @@ h1,h2,h3,h4,h5,h6 {
 }
 
 body.wide-window {
-    max-width: 800px !important;
+    max-width: 900px !important;
 }
 
 main {
@@ -66,7 +67,7 @@ main {
     flex-wrap: wrap;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 700px) {
     .pane-container {
         flex-wrap: nowrap;
     }
@@ -104,9 +105,28 @@ main {
 }
 
 .pane-content {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .pane-content.collapsed {
     display: none;
+}
+
+.pane-content fieldset {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.pane-content .field-row button[type="submit"] {
+    min-width: 110px;
+}
+
+#responseCreate,
+#responseJoin,
+#responseLeave,
+#responseManager,
+#responseMember {
+    min-height: 1.5em;
 }

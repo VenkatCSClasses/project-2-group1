@@ -46,10 +46,11 @@
                         id="householdName"
                         name="householdName"
                         placeholder="Household Name"
+                        class="full-width"
                       >
                     </div>
                     <div class="field-row">
-                      <button type="submit" name="submit">Submit</button>
+                      <button type="submit" name="submit">Create Household</button>
                     </div>
                     <div id="responseCreate"></div>
                   </form>
@@ -68,10 +69,11 @@
                         id="householdCode"
                         name="householdCode"
                         placeholder="Household Join Code"
+                        class="full-width"
                       >
                     </div>
                     <div class="field-row">
-                      <button type="submit" name="submit">Submit</button>
+                      <button type="submit" name="submit">Join Household</button>
                     </div>
                     <div id="responseJoin"></div>
                   </form>
@@ -91,12 +93,13 @@
                         hx-get="/api/homepage/leave-dropdown"
                         hx-trigger="load, updateDropdown from:body"
                         hx-target="this"
+                        class="full-width"
                       >
                         <option value="" disabled selected>Loading…</option>
                       </select>
                     </div>
                     <div class="field-row">
-                      <button type="submit">Submit</button>
+                      <button type="submit">Leave Household</button>
                     </div>
                     <div id="responseLeave"></div>
                   </form>
@@ -118,6 +121,7 @@
                     hx-trigger="load, updateDropdown from:body"
                     hx-swap="innerHTML"
                   >
+                    Loading…
                   </div>
                 </fieldset>
                 <fieldset>
@@ -128,6 +132,7 @@
                     hx-trigger="load, updateDropdown from:body"
                     hx-swap="innerHTML"
                   >
+                    Loading…
                   </div>
                 </fieldset>
               </div>

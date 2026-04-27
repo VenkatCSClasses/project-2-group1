@@ -38,3 +38,75 @@ h1,h2,h3,h4,h5,h6 {
     margin-right: auto;
     display: block;
 }
+
+body.wide-window {
+    max-width: 800px !important;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.userInfo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.userInfo button {
+    margin: 0;
+}
+
+.pane-container {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+@media (min-width: 900px) {
+    .pane-container {
+        flex-wrap: nowrap;
+    }
+
+    .pane {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+.pane {
+    display: flex;
+    flex-direction: column;
+}
+
+.pane-header {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    user-select: none;
+}
+
+.pane-toggle-button {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    min-width: 0;
+    font-size: 11px;
+    font-family: MS Sans Serif, Arial, sans-serif;
+    line-height: 1;
+}
+
+.pane-toggle-button:active {
+    font-weight: bold;
+}
+
+.pane-content {
+    display: block;
+}
+
+.pane-content.collapsed {
+    display: none;
+}

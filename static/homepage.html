@@ -1,24 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <script src="/static/selfcsp/htmx.2.0.8.min.js" defer></script>
-        <link rel="stylesheet" href="/static/selfcsp/98.css" />
-        <link rel="stylesheet" href="/static/selfcsp/style_default.css" />
+        <!-- INSERT_HEAD_HTML -->
         <title>Home Page</title>
     </head>
     <body>
         <main>
             <header>
                 <h1>Home Page</h1>
-                <!--Edit/view profile and logout buttons-->
             </header>
-            <section class="addHouseholds">
-                <h2>Add Households</h2>
+            <section class="userInfo">
+                <div id="username" hx-get="/api/homepage/get-username" hx-trigger="load" hx-swap="outerHTML"></div>
+                <a href="/logout"><button>Logout</button></a>
+            </section>
+            <section class="modifyHouseholds">
+                <h2>Modify Households</h2>
                 <section class="createHousehold" aria-label="Create Household Form"></section>
                     <h3>Create New Household</h3>
-                    <form hx-post="/api/homepage/create-household" hx-target="#responseCreate">
+                    <form hx-post="/api/homepage/create-household" hx-target="#responseCreate" hx-swap="innerHTML">
                         <label for="household-name" aria-label="Household Name">Create Household:</label>
                         <input type="text" id="householdName" name="householdName" placeholder="Household Name" aria-placeholder="Household Name (Max 32 Chars)" >
                         <button type="submit" name="submit">Submit</button>
@@ -26,25 +25,42 @@
                     </form>
                 </section>
                     <h3>Join Household</h3>
-                <section class="joinHousehold" aria-label="Join Household Form"></section>
-                    <form hx-post="/api/homepage/join-household" hx-target="#responseJoin">
+                <section class="joinHousehold" aria-label="Join Household Form">
+                    <form hx-post="/api/homepage/join-household" hx-target="#responseJoin" hx-swap="innerHTML">
                         <label for="householdName">Join Household Via Code:</label>
                         <input type="text" id="householdCode" name="householdCode" placeholder="Household Join Code" aria-placeholder="Household Join Code">
                         <button type="submit" name="submit">Submit</button>
                     </form>
                     <div id="responseJoin"></div>
                 </section>
-            </section>
-            <section class="currentHouseholds">
-                <h2>Current Households</h2>
-                <section class="managerHouseholds">
-                    <h3>Manager Households</h3>
-                    <div hx-get="/api/homepage/manager-households" hx-trigger="load" hx-swap="outerHTML"></div>
+                <section class="leaveHousehold" aria-label="Leave Household Form">
+                    <h3>Leave Household</h3>
+                    <form hx-post="/api/homepage/leave-household" hx-target="#responseLeave" hx-swap="innerHTML">
+                        <label for="householdName">Leave Household:</label>
+                        <select name="householdID" id="item-dropdown" hx-get="/api/homepage/leave-dropdown" hx-trigger="load, updateDropdown from:body" hx-target="this">
+                            <option value="" disabled selected>Loading...</option>
+                        </select>
+                        <button type="submit">Submit</button>
+                    </form>
+                    <div id="responseLeave"></div>
                 </section>
-                <section class="member-households">
+            </section>
+            <section class="listHouseholds">
+                <h2>List Households</h2>
+                <section id="managerHouseholds">
+                    <h3>Manager Households</h3>
+                    <div id="responseManager" hx-get="/api/homepage/manager-households" hx-trigger="load, updateDropdown from:body" hx-swap="innerHTML"></div>
+                </section>
+                <section id="memberHouseholds">
                     <h3>Member Households</h3>
-                    <div hx-get="/api/homepage/member-households" hx-trigger="load" hx-swap="outerHTML"></div>
+                    <div id="responseMember" hx-get="/api/homepage/member-households" hx-trigger="load, updateDropdown from:body" hx-swap="innerHTML"></div>
                 </section>
             </section>
         </main>
+        <script src="/static/selfcsp/htmx.2.0.8.min.js"></script>
+        <script>
+            // Enable credentials (cookies) in HTMX requests
+            htmx.config.withCredentials = true;
+        </script>
+    </body>
 </html>

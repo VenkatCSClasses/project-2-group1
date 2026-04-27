@@ -1,0 +1,29 @@
+---
+User State Diagram
+---
+stateDiagram
+    state "Account Member View" as s1
+    state "Join Household" as s2
+    state "Account Manager View" as s3
+    state "Logged In" as s4
+    state "Log In Page" as s5
+    state login <<choice>>
+    state register <<choice>>
+    state role <<choice>>
+
+    [*] --> s5 : log in
+    [*] --> Register : register
+    s5 --> login : input credentials
+    login --> Error : invalid login
+    login --> s4 : validated
+    Register --> register : input registration info
+    register --> s4 : registered
+    register --> Error : invalid registration
+    s4 --> [*] : log out
+    s4 --> role : select household
+    role --> s1 : if member
+    role --> s3 : if manager
+    s4 --> s2 : input household code
+    s1 --> s4 : back
+    s2 --> s4 : back
+    s3 --> s4 : back

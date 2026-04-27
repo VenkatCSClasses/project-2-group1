@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Household Route</title>
+    <link rel="stylesheet" href="https://unpkg.com/98.css">
+    <style>
+      html {
+        background-color: #a8ea90;
+      }
+
+      body {
+        max-width: 980px;
+        margin: 24px auto;
+        padding: 0 14px 18px;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        font-family: "Times New Roman", Times, serif;
+        font-size-adjust: 0.2;
+      }
+
+      .title-actions {
+        margin-left: auto;
+      }
+
+      .window {
+        box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.2);
+      }
+
+      .window-body {
+        padding: 14px;
+      }
+
+      .household-card {
+        display: grid;
+        gap: 12px;
+      }
+
+      .section-panel {
+        padding: 12px;
+        border: 2px groove #dfdfdf;
+        background: #fff;
+      }
+
+      .top-grid {
+        display: grid;
+        grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
+        gap: 12px;
+      }
+
+      .meta-row {
+        display: grid;
+        grid-template-columns: 130px 1fr;
+        gap: 7px 10px;
+        margin: 0;
+      }
+
+      .meta-row dt {
+        font-weight: 700;
+      }
+
+      .meta-row dd {
+        margin: 0;
+      }
+
+      .accounts-form {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 7px;
+        max-width: 460px;
+      }
+
+      .accounts-form button {
+        width: 100%;
+      }
+
+      .accounts-form input {
+        width: 100%;
+      }
+
+      .section-spacer {
+        margin-top: 0;
+      }
+
+      .account-table {
+        width: 100%;
+        table-layout: fixed;
+      }
+
+      .account-table th,
+      .account-table td {
+        vertical-align: top;
+      }
+
+      .account-table td:last-child {
+        width: 92px;
+      }
+
+      .account-table th:nth-child(3),
+      .account-table th:nth-child(4),
+      .account-table td:nth-child(3),
+      .account-table td:nth-child(4) {
+        text-align: right;
+      }
+
+      .status {
+        min-height: 18px;
+        margin-top: 8px;
+      }
+
+      .copy-password-btn {
+        width: 74px;
+      }
+
+      .account-delete-btn {
+        width: 74px;
+      }
+
+      .password-cell {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 74px;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .password-value {
+        overflow-wrap: anywhere;
+      }
+
+      #members-output {
+        margin: 8px 0 0;
+        padding-left: 22px;
+      }
+
+      .member-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .member-remove-btn {
+        min-width: 64px;
+      }
+
+      .section-title {
+        margin: 0 0 7px;
+      }
+
+      .members {
+        background: #f4f4f4;
+      }
+
+      .overview {
+        background: #fcfcfc;
+      }
+
+      @media (max-width: 760px) {
+        .top-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .meta-row {
+          grid-template-columns: 108px 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="window">
+      <div class="title-bar">
+        <div class="title-bar-text">SubSeer Household View</div>
+        <div class="title-bar-controls title-actions">
+          <button type="button" onclick="window.location.href='/'">Back</button>
+        </div>
+      </div>
+      <div class="window-body">
+        <article class="household-card" aria-label="Household placeholder">
+          <h2 id="household-name" class="section-title">Loading household...</h2>
+          <p id="viewer-context" class="viewer-context" role="status" aria-live="polite">
+            Loading user context...
+          </p>
+          <div class="top-grid">
+            <section aria-label="Household overview" class="section-panel overview" >
+              <h3 class="section-title">Household Overview</h3>
+              <dl class="meta-row">
+                <dt>Household ID:</dt>
+                <dd id="household-id">-</dd>
+
+                <dt>Created:</dt>
+                <dd><time id="household-created" datetime="">-</time></dd>
+
+                <dt>Updated:</dt>
+                <dd><time id="household-updated" datetime="">-</time></dd>
+
+                <dt>Member Count:</dt>
+                <dd id="household-member-count">0</dd>
+              </dl>
+              <p id="join-code-status" class="status" role="status" aria-live="polite"></p>
+
+            </section>
+
+            <section class="members section-panel" aria-label="Household members">
+              <h3 class="section-title">Household Members</h3>
+              <p>Current residents with role assignments.</p>
+              <ul id="members-output">
+                <li>Loading members...</li>
+              </ul>
+              <p id="member-status" class="status" role="status" aria-live="polite"></p>
+            </section>
+          </div>
+
+          <section class="accounts section-panel" aria-label="Account placeholders">
+            <h3 class="section-title">Shared Vault Passwords</h3>
+
+            <p id="account-status" class="status" role="status" aria-live="polite"></p>
+
+            <div id="accounts-output">Loading accounts...</div>
+          </section>
+        </article>
+      </div>
+    </div>
+
+    <script>
+      const accountsOutput = document.getElementById("accounts-output");
+      const accountsForm = document.getElementById("accounts-form");
+      const statusEl = document.getElementById("account-status");
+      const memberStatusEl = document.getElementById("member-status");
+      const membersOutput = document.getElementById("members-output");
+      const householdNameEl = document.getElementById("household-name");
+      const householdIdEl = document.getElementById("household-id");
+      const householdJoinCodeEl = document.getElementById("household-join-code");
+      const householdCreatedEl = document.getElementById("household-created");
+      const householdUpdatedEl = document.getElementById("household-updated");
+      const householdMemberCountEl = document.getElementById("household-member-count");
+      let currentHouseholdId = null;
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function parsePositiveInteger(value) {
+        if (value === null || value === "") {
+          return null;
+        }
+
+        const parsed = Number(value);
+        if (!Number.isInteger(parsed) || parsed <= 0) {
+          return null;
+        }
+
+        return parsed;
+      }
+
+      function readParam(searchParams, keys) {
+        for (const key of keys) {
+          const value = searchParams.get(key);
+          if (value !== null && value !== "") {
+            return value;
+          }
+        }
+
+        return null;
+      }
+
+      function getPageContextIds() {
+        const searchParams = new URLSearchParams(window.location.search);
+
+        const householdRaw = readParam(searchParams, [
+          "householdId",
+          "household_id",
+          "househildId",
+          "househild_id",
+        ]);
+        const userRaw = readParam(searchParams, ["userId", "user_id"]);
+
+        return {
+          householdId: parsePositiveInteger(householdRaw),
+          userId: parsePositiveInteger(userRaw),
+        };
+      }
+
+      function applyRoleDisplayState() {
+        accountsForm.style.display = "grid";
+        managerOnlyNoteEl.textContent = "";
+
+      function renderAccounts(accounts) {
+        if (!accounts.length) {
+          accountsOutput.innerHTML = "<p>No streaming accounts have been added yet.</p>";
+          return;
+        }
+
+        const rows = accounts.map((account) => {
+          return `
+            <tr>
+              <td>${escapeHtml(account.service_name)}</td>
+              <td>${escapeHtml(account.account_identifier)}</td>
+              <td class="password-cell">
+                <span class="password-value">${escapeHtml(account.password || "")}</span>
+                <button
+                  class="copy-password-btn"
+                  type="button"
+                  data-copy-password="${escapeHtml(account.password || "")}" 
+                  aria-label="Copy password"
+                >
+                  Copy
+                </button>
+              </td>
+              <td>
+                <button type="button" class="account-delete-btn" data-account-id="${String(account.account_id)}">Delete</button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+        accountsOutput.innerHTML = `
+          <table class="account-table" aria-label="Stored streaming accounts">
+            <thead>
+              <tr>
+                <th>Service</th>
+                <th>Email Address</th>
+                <th>Password</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        `;
+      }
+
+      function isEmailAddress(value) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+      }
+
+      function setCopiedState(button) {
+        const originalText = button.textContent || "Copy";
+        button.textContent = "Copied!";
+        button.disabled = true;
+
+        window.setTimeout(() => {
+          button.textContent = originalText;
+          button.disabled = false;
+        }, 1200);
+      }
+
+      async function loadAccounts() {
+        if (currentHouseholdId === null) {
+          accountsOutput.textContent = "Create a household first to add accounts.";
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/household/accounts?household_id=${currentHouseholdId}`);
+
+          if (!response.ok) {
+            throw new Error("Failed to load account data");
+          }
+
+          const payload = await response.json();
+          renderAccounts(Array.isArray(payload.data) ? payload.data : []);
+        } catch (_error) {
+          accountsOutput.textContent = "Unable to load accounts right now.";
+        }
+      }
+
+      function renderMembers(members) {
+        if (!members.length) {
+          householdMemberCountEl.textContent = "0";
+          membersOutput.innerHTML = "<li>No members have been added yet.</li>";
+          return;
+        }
+
+        householdMemberCountEl.textContent = String(members.length);
+
+        membersOutput.innerHTML = members
+          .map((member) => {
+            return `
+              <li>
+                <div class="member-row">
+                  <span><strong>${escapeHtml(member.name)}</strong> - ${escapeHtml(member.role)}</span>
+                  <button
+                    type="button"
+                    class="member-remove-btn"
+                    data-member-id="${String(member.member_id)}"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </li>
+            `;
+          })
+          .join("");
+      }
+
+      async function loadMembers() {
+        if (currentHouseholdId === null) {
+          membersOutput.innerHTML = "<li>Create a household first to view members.</li>";
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/household/members?household_id=${currentHouseholdId}`);
+
+          if (!response.ok) {
+            throw new Error("Failed to load member data");
+          }
+
+          const payload = await response.json();
+          renderMembers(Array.isArray(payload.data) ? payload.data : []);
+        } catch (_error) {
+          membersOutput.innerHTML = "<li>Unable to load members right now.</li>";
+        }
+      }
+
+      function formatDate(iso) {
+        const date = new Date(iso);
+        if (Number.isNaN(date.getTime())) {
+          return "-";
+        }
+        return date.toLocaleString();
+      }
+
+      function renderHouseholdContext(context) {
+        if (!context || !context.household || !context.user) {
+          householdNameEl.textContent = "No household found";
+          householdIdEl.textContent = "-";
+          householdJoinCodeEl.textContent = "-";
+          copyJoinCodeBtn.disabled = true;
+          joinCodeStatusEl.textContent = "";
+          householdCreatedEl.textContent = "-";
+          householdCreatedEl.setAttribute("datetime", "");
+          householdUpdatedEl.textContent = "-";
+          householdUpdatedEl.setAttribute("datetime", "");
+          currentHouseholdId = null;
+          viewerContextEl.className = "viewer-context";
+          viewerContextEl.textContent = "Could not load user context.";
+          applyRoleDisplayState();
+          return;
+        }
+
+        const household = context.household;
+        const user = context.user;
+        const role = String(user.role || "member").toLowerCase();
+        const isManager = role === "manager" || user.is_manager === true;
+
+        currentHouseholdId = household.household_id;
+        currentUserId = user.user_id;
+        householdNameEl.textContent = household.household_name;
+        householdIdEl.textContent = String(household.household_id);
+        householdJoinCodeEl.textContent = String(household.join_code);
+        copyJoinCodeBtn.disabled = false;
+        joinCodeStatusEl.textContent = "";
+        householdCreatedEl.textContent = formatDate(household.created_at);
+        householdCreatedEl.setAttribute("datetime", household.created_at);
+        householdUpdatedEl.textContent = formatDate(household.updated_at);
+        householdUpdatedEl.setAttribute("datetime", household.updated_at);
+        viewerContextEl.className = `viewer-context ${isManager ? "manager" : "member"}`;
+        viewerContextEl.textContent = `Viewing as ${user.username} - ${isManager ? "Manager" : "Member"}`;
+        applyRoleDisplayState();
+      }
+
+      async function loadHouseholdContext() {
+        const ids = getPageContextIds();
+
+        if (ids.householdId === null || ids.userId === null) {
+          renderHouseholdContext(null);
+          accountsOutput.textContent = "Missing required query params: householdId and userId.";
+          membersOutput.innerHTML = "<li>Missing required query params: householdId and userId.</li>";
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `/api/household/context?household_id=${ids.householdId}&user_id=${ids.userId}`,
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to load household context");
+          }
+
+          const payload = await response.json();
+          renderHouseholdContext(payload);
+        } catch (_error) {
+          renderHouseholdContext(null);
+          accountsOutput.textContent = "Unable to load household context right now.";
+          membersOutput.innerHTML = "<li>Unable to load household context right now.</li>";
+        }
+      }
+
+      accountsOutput.addEventListener("click", async (event) => {
+        const target = event.target;
+
+        if (!(target instanceof HTMLButtonElement)) {
+          return;
+        }
+
+        const passwordToCopy = target.dataset.copyPassword;
+        if (typeof passwordToCopy === "string") {
+          try {
+            await navigator.clipboard.writeText(passwordToCopy);
+            statusEl.textContent = "Password copied to clipboard.";
+            setCopiedState(target);
+          } catch (_error) {
+            statusEl.textContent = "Could not copy password.";
+          }
+          return;
+        }
+
+        const accountId = Number(target.dataset.accountId || "");
+        if (!Number.isInteger(accountId)) {
+          statusEl.textContent = "Invalid account selected.";
+          return;
+        }
+
+        statusEl.textContent = "Removing account...";
+
+        try {
+          const response = await fetch(`/api/household/accounts/${accountId}`, {
+            method: "DELETE",
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to delete account");
+          }
+
+          statusEl.textContent = "Account removed.";
+          await loadAccounts();
+        } catch (_error) {
+          statusEl.textContent = "Could not remove account. Try again.";
+        }
+      });
+
+      membersOutput.addEventListener("click", async (event) => {
+        const target = event.target;
+
+        if (!(target instanceof HTMLButtonElement)) {
+          return;
+        }
+
+        const memberId = Number(target.dataset.memberId || "");
+        if (!Number.isInteger(memberId) || currentHouseholdId === null) {
+          memberStatusEl.textContent = "Invalid member selected.";
+          return;
+        }
+
+        memberStatusEl.textContent = "Removing member...";
+
+        try {
+          const response = await fetch(
+            `/api/household/members/${memberId}?household_id=${currentHouseholdId}`,
+            { method: "DELETE" },
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to remove member");
+          }
+
+          memberStatusEl.textContent = "Member removed.";
+          await loadMembers();
+        } catch (_error) {
+          memberStatusEl.textContent = "Could not remove member. Try again.";
+        }
+      });
+
+      async function initializePage() {
+        await loadHousehold();
+        await Promise.all([loadMembers(), loadAccounts()]);
+      }
+
+      void initializePage();
+    </script>
+  </body>
+</html>

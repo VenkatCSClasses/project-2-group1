@@ -9,6 +9,7 @@ import keychainRoutes from "./routes/keychain.ts";
 import { addHeadHTML, upgradeHTTPS } from "./middlewares.ts";
 import homepageRoutes from "./routes/homepage.ts";
 import { runMigrations } from "./database/knex.ts";
+import householdRoutes from "./routes/household.ts";
 
 // Run db migrations if not already applied
 await runMigrations();
@@ -19,6 +20,8 @@ const app = new Hono();
 app.use(secureHeaders({
   contentSecurityPolicy: {
     defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", "'unsafe-inline'"],
+    styleSrc: ["'self'", "'unsafe-inline'"],
   },
 }));
 
@@ -49,6 +52,7 @@ app.use(
 // All routes go here =============================================
 
 app.route("/api/account", accountRoutes);
+app.route("/api/household", householdRoutes);
 app.route("/api/homepage", homepageRoutes);
 app.route("/api/keychain", keychainRoutes);
 

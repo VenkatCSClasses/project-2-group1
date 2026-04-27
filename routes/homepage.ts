@@ -1,4 +1,4 @@
-import { Hono, Context } from "@hono/hono";
+import { Context, Hono } from "@hono/hono";
 import { html } from "@hono/hono/html";
 import { db } from "../database/knex.ts";
 import { isLoggedIn } from "../cryptography.ts";
@@ -20,7 +20,7 @@ type HouseholdMembership = {
   role: string;
   created_at: Date;
   updated_at: Date;
-}
+};
 
 type User = {
   user_id: number;
@@ -263,21 +263,21 @@ app.post("/join-household", async (c: Context) => {
   const householdCode = body["householdCode"];
 
   // Ensure input is a string, not a file
-  if (typeof householdCode !== "string"){
+  if (typeof householdCode !== "string") {
     return c.html(
       html`
         "Error: Household Join Code must be a valid six digit integer code."
       `,
-    )
-  } 
+    );
+  }
 
   // Ensure input is 6 digit integer
-  if (!/^\d{6}$/.test(householdCode.trim())){
+  if (!/^\d{6}$/.test(householdCode.trim())) {
     return c.html(
       html`
         "Error: Household Join Code must be a valid six digit integer code."
       `,
-    )
+    );
   }
 
   const parsedJoinCode = Number.parseInt(householdCode.trim(), 10);
@@ -286,12 +286,12 @@ app.post("/join-household", async (c: Context) => {
   const household = await db<Household>("household")
     .where({ join_code: parsedJoinCode })
     .first();
-  if (!household){
+  if (!household) {
     return c.html(
       html`
         "Error: Household Join Code does not exist."
       `,
-    )
+    );
   }
 
   const householdID: number = household.household_id;
@@ -318,7 +318,7 @@ app.post("/join-household", async (c: Context) => {
     html`
       "UserID: ${userID} successfully joined household: ${householdName}. Refreshing page!"
     `,
-  )
+  );
 });
 
 // Route to create a household
@@ -341,21 +341,21 @@ app.post("/create-household", async (c: Context) => {
   const householdName = body["householdName"];
 
   // Ensure input is a string, not a file
-  if (typeof householdName !== "string"){
+  if (typeof householdName !== "string") {
     return c.html(
       html`
         "Error: Household Name must be alphanumeric with max 32 characters."
       `,
-    )
-  } 
+    );
+  }
 
   // Check alphanumeric and 32 or less characters
-  if (!/^[a-zA-Z0-9]{1,32}$/.test(householdName.trim())){
+  if (!/^[a-zA-Z0-9]{1,32}$/.test(householdName.trim())) {
     return c.html(
       html`
         "Error: Household Name must be alphanumeric with max 32 characters."
       `,
-    )
+    );
   }
 
   // Generate new join code (stretch goal, make more secure??)
@@ -367,15 +367,14 @@ app.post("/create-household", async (c: Context) => {
 
     // Check and see if join code exists
     tempHousehold = await db<Household>("household")
-      .where({join_code: joinCode})
+      .where({ join_code: joinCode })
       .first();
-  } 
-  while (tempHousehold);
+  } while (tempHousehold);
 
   // Insert new household
   const [household] = await db<Household>("household")
-    .insert({household_name: householdName, join_code: joinCode})
-    .returning('*')
+    .insert({ household_name: householdName, join_code: joinCode })
+    .returning("*");
 
   // Insert new member connection
   const householdID: number = household.household_id;
@@ -388,7 +387,7 @@ app.post("/create-household", async (c: Context) => {
     html`
       "UserID: ${userID} successfully created household: '${householdName}' with join code ${joinCode}."
     `,
-  )
+  );
 });
 
 // Route to attempt to leave a household

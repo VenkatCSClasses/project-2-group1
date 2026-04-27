@@ -1,66 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <!-- INSERT_HEAD_HTML -->
-        <title>Home Page</title>
-    </head>
-    <body>
+  <head>
+    <!-- INSERT_HEAD_HTML -->
+    <title>Home Page</title>
+    <script src="/selfcsp/pane-toggle.js" defer></script>
+  </head>
+  <body class="wide-window">
+    <div class="window">
+      <div class="title-bar">
+        <div class="title-bar-text">
+          Home Page
+        </div>
+      </div>
+      <div class="window-body">
         <main>
-            <header>
-                <h1>Home Page</h1>
-            </header>
-            <section class="userInfo">
-                <div id="username" hx-get="/api/homepage/get-username" hx-trigger="load" hx-swap="outerHTML"></div>
-                <a href="/logout"><button>Logout</button></a>
-            </section>
-            <section class="modifyHouseholds">
-                <h2>Modify Households</h2>
-                <section class="createHousehold" aria-label="Create Household Form"></section>
-                    <h3>Create New Household</h3>
-                    <form hx-post="/api/homepage/create-household" hx-target="#responseCreate" hx-swap="innerHTML">
-                        <label for="household-name" aria-label="Household Name">Create Household:</label>
-                        <input type="text" id="householdName" name="householdName" placeholder="Household Name" aria-placeholder="Household Name (Max 32 Chars)" >
-                        <button type="submit" name="submit">Submit</button>
-                        <div id="responseCreate"></div>
-                    </form>
-                </section>
-                    <h3>Join Household</h3>
-                <section class="joinHousehold" aria-label="Join Household Form">
-                    <form hx-post="/api/homepage/join-household" hx-target="#responseJoin" hx-swap="innerHTML">
-                        <label for="householdName">Join Household Via Code:</label>
-                        <input type="text" id="householdCode" name="householdCode" placeholder="Household Join Code" aria-placeholder="Household Join Code">
-                        <button type="submit" name="submit">Submit</button>
-                    </form>
+          <div class="userInfo">
+            <div
+              id="username"
+              hx-get="/api/homepage/get-username"
+              hx-trigger="load"
+              hx-swap="outerHTML"
+            >
+            </div>
+            <a href="/logout"><button>Logout</button></a>
+          </div>
+
+          <div class="pane-container">
+            <div class="pane" id="pane-modify">
+              <div class="pane-header">
+                <button type="button" class="pane-toggle-button">−</button>
+                <legend>Modify Households</legend>
+              </div>
+              <div class="pane-content">
+                <fieldset>
+                  <legend>Create New Household</legend>
+                  <form
+                    hx-post="/api/homepage/create-household"
+                    hx-target="#responseCreate"
+                    hx-swap="innerHTML"
+                  >
+                    <div class="field-row-stacked">
+                      <label for="householdName">Create Household:</label>
+                      <input
+                        type="text"
+                        id="householdName"
+                        name="householdName"
+                        placeholder="Household Name"
+                        class="full-width"
+                      >
+                    </div>
+                    <div class="field-row">
+                      <button type="submit" name="submit">Create Household</button>
+                    </div>
+                    <div id="responseCreate"></div>
+                  </form>
+                </fieldset>
+                <fieldset>
+                  <legend>Join Household</legend>
+                  <form
+                    hx-post="/api/homepage/join-household"
+                    hx-target="#responseJoin"
+                    hx-swap="innerHTML"
+                  >
+                    <div class="field-row-stacked">
+                      <label for="householdCode">Join Household Via Code:</label>
+                      <input
+                        type="text"
+                        id="householdCode"
+                        name="householdCode"
+                        placeholder="Household Join Code"
+                        class="full-width"
+                      >
+                    </div>
+                    <div class="field-row">
+                      <button type="submit" name="submit">Join Household</button>
+                    </div>
                     <div id="responseJoin"></div>
-                </section>
-                <section class="leaveHousehold" aria-label="Leave Household Form">
-                    <h3>Leave Household</h3>
-                    <form hx-post="/api/homepage/leave-household" hx-target="#responseLeave" hx-swap="innerHTML">
-                        <label for="householdName">Leave Household:</label>
-                        <select name="householdID" id="item-dropdown" hx-get="/api/homepage/leave-dropdown" hx-trigger="load, updateDropdown from:body" hx-target="this">
-                            <option value="" disabled selected>Loading...</option>
-                        </select>
-                        <button type="submit">Submit</button>
-                    </form>
+                  </form>
+                </fieldset>
+                <fieldset>
+                  <legend>Leave Household</legend>
+                  <form
+                    hx-post="/api/homepage/leave-household"
+                    hx-target="#responseLeave"
+                    hx-swap="innerHTML"
+                  >
+                    <div class="field-row-stacked">
+                      <label for="item-dropdown">Leave Household:</label>
+                      <select
+                        name="householdID"
+                        id="item-dropdown"
+                        hx-get="/api/homepage/leave-dropdown"
+                        hx-trigger="load, updateDropdown from:body"
+                        hx-target="this"
+                        class="full-width"
+                      >
+                        <option value="" disabled selected>Loading…</option>
+                      </select>
+                    </div>
+                    <div class="field-row">
+                      <button type="submit">Leave Household</button>
+                    </div>
                     <div id="responseLeave"></div>
-                </section>
-            </section>
-            <section class="listHouseholds">
-                <h2>List Households</h2>
-                <section id="managerHouseholds">
-                    <h3>Manager Households</h3>
-                    <div id="responseManager" hx-get="/api/homepage/manager-households" hx-trigger="load, updateDropdown from:body" hx-swap="innerHTML"></div>
-                </section>
-                <section id="memberHouseholds">
-                    <h3>Member Households</h3>
-                    <div id="responseMember" hx-get="/api/homepage/member-households" hx-trigger="load, updateDropdown from:body" hx-swap="innerHTML"></div>
-                </section>
-            </section>
+                  </form>
+                </fieldset>
+              </div>
+            </div>
+
+            <div class="pane" id="pane-list">
+              <div class="pane-header">
+                <button type="button" class="pane-toggle-button">−</button>
+                <legend>List Households</legend>
+              </div>
+              <div class="pane-content">
+                <fieldset>
+                  <legend>Manager Households</legend>
+                  <div
+                    id="responseManager"
+                    hx-get="/api/homepage/manager-households"
+                    hx-trigger="load, updateDropdown from:body"
+                    hx-swap="innerHTML"
+                  >
+                    Loading…
+                  </div>
+                </fieldset>
+                <fieldset>
+                  <legend>Member Households</legend>
+                  <div
+                    id="responseMember"
+                    hx-get="/api/homepage/member-households"
+                    hx-trigger="load, updateDropdown from:body"
+                    hx-swap="innerHTML"
+                  >
+                    Loading…
+                  </div>
+                </fieldset>
+              </div>
+            </div>
+          </div>
         </main>
-        <script src="/static/selfcsp/htmx.2.0.8.min.js"></script>
-        <script>
-            // Enable credentials (cookies) in HTMX requests
-            htmx.config.withCredentials = true;
-        </script>
-    </body>
+      </div>
+    </div>
+    <script src="/static/selfcsp/htmx.2.0.8.min.js"></script>
+    <script>
+      // Enable credentials (cookies) in HTMX requests
+      htmx.config.withCredentials = true;
+    </script>
+  </body>
 </html>

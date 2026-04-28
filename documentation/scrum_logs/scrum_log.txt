@@ -1,0 +1,78 @@
+Sprint diary week of Apr 6:
+* Andrew created kanban board
+* Andrew set up deno deploy for publishing code
+* Sam cloned basic template for deno to standardize workflow
+
+Scrum meeting tuesday apr 7th:
+* Add more comments on issues clarifying the design of individual pages/flows as adapted from Blake's state diagram
+* Added ERD diagram so that the team can coordinate database code
+* Discussed deployment details and usage of the HTMX library
+    * Deployed at https://project-2-group1.comp345spr26team1.deno.net/
+* Sam presented a NotebookLM project with references for libraries used: 
+    * https://notebooklm.google.com/notebook/2bd1b35d-3fc3-4ac1-856c-95ebf04de075?authuser=1
+* Andrew presented the updated issue board now sorted by sprint
+    * https://github.com/orgs/VenkatCSClasses/projects/5/views/1?sliceBy%5BcolumnId%5D=Labels&sliceBy%5Bvalue%5D=sprint1
+
+Meeting notes Apr 8:
+* Routes are collected by files, related routes go in the same file.
+    * Routes are collected in main.ts to a certain scope. When in accounts, you define GET / or POST /create, but then main.ts imports these scoped as GET /api/accounts/ or POST /api/accounts/create
+* What happens when a manager leaves?
+    * Must have one other manager to leave or it will error
+    * Can promote other manager through existing UI
+    * Last member that leaves → delete household
+* HTMX - adds get/post/etc requests to HTML attributes
+    * Examples in repo/documentation in NotebookLM chat context if people have questions, or ask Sam on slack/via email
+
+Meeting notes April 9:
+* Blake has been working on a rough outline for the individual household page
+* Andrew has started on the page and routes for the main page (shows households one is a part of)
+* Rhys worked the manager state diagram, needs to be updated/committed to the project
+* Sam is working on login/logout as well as knex db intialization
+* Dena is working on the manager portion of individual household page
+
+Meeting notes April 10th:
+* Continued working on tasks
+* sequence diagrams for user login and user registration and joining household has been made
+
+Meeting Notes April 14th
+* Met over Google Meets to go over the sprint retrospective
+
+Meeting Notes April 15th:
+* Sprint plan 2 made
+* Andrew and Rhys are working on the main page
+* Blake and Dena are working on the household pages (separate views for managers and members)
+* Sam is continuing to work on the login/logout
+
+Meeting Notes April 16th:
+* Continued working, pages have most functionality
+* Began testing each page with each other to see if they properly redirect
+
+Meeting Notes April 17th:
+* Andrew finished the leave household function, Rhys almost done with the different views on the household page just need to style it
+* Log in and sign in functionality should be working
+* There will be one household page that checks the user's role to determine what content to display
+
+Notes Mon Apr 20:
+* Need to merge household view into main
+* Integrating the household view with the household list view
+* Both managers and members will be able to access the add account form, but only managers can remove accounts
+
+Notes April 22nd:
+* Troubleshooting making household and homepage work together, working on passwords
+* Sprint review document made: https://docs.google.com/document/d/1_GayMdpJpRtRDXSMj__kOz_pvhIGZL9QRWQC4yCpKeI/edit?usp=sharing
+
+Notes April 24th:
+* Everything is integrated
+* Still working on styling the homepage
+* Andrew is finishing unit testing
+
+April 27th:
+* Everything implemented to the dev branch and should be deployed on Deno, just need styling on home page
+* user state diagram updated
+* will practice demo on Tuesday, April 28th, at 11am in Will 302
+
+April 28th:
+* Met to practice demo
+* Flushed out demo steps, challenges we are going to cover, etc, listed below
+* Worked on final submission steps
+

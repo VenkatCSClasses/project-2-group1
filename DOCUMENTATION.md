@@ -18,6 +18,9 @@
 
 **SubSeer** is a household account manager web application that allows users to securely store and manage shared account credentials within a household group (family, roommates, etc.).
 
+It is recommended to interact with this project at the link below:<br>
+<https://subseer.robog.net>
+
 ### Key Features:
 - User registration and authentication with JWT tokens
 - Create or join households using join codes
@@ -506,5 +509,5 @@ For additional help:
 
 ---
 
-**Last Updated:** April 27, 2026  
-**Version:** 1.0
+**Last Updated:** April 28, 2026  
+**Version:** 1.1

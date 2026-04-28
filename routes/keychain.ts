@@ -2,16 +2,14 @@ import { Hono } from "hono";
 import { db } from "../database/knex.ts";
 import { Buffer } from "node:buffer";
 import {
+  createNonce,
   importPublicKey,
   isLoggedIn,
   loginAs,
-  unlockKey,
   userKeyOpts,
+  validateNonce,
 } from "../cryptography.ts";
 import { html } from "hono/html";
-import cluster from "node:cluster";
-import { useImperativeHandle } from "hono/jsx";
-import { convertProcessSignalToExitCode } from "node:util";
 
 const app = new Hono();
 
@@ -102,12 +100,56 @@ app.put("/store", async (c) => {
   }
 });
 
+app.get("/unlock", async (c) => {
+  const credentialId: number = parseInt(c.req.query("credentialId") as string);
+
+  // deno-lint-ignore no-explicit-any
+  const loginResult = await isLoggedIn(c as any);
+
+  if (!loginResult.loggedIn) {
+    // This is basically just to prevent spam.
+    // The user is not actually checked until they POST to unlock
+    return c.html("Can only use this route when logged in");
+  }
+
+  let nonce: string;
+
+  try {
+    nonce = await createNonce();
+  } catch (_) {
+    return c.html(
+      html`
+        <p>Failed to generate login nonce: please refresh the page and try again.</p>
+      `,
+    );
+  }
+
+  console.log(`Created unlock form nonce=${nonce}`);
+
+  return c.html(
+    html`
+      <form class="login-form" hx-post="/api/keychain/unlock" hx-swap="outerHTML">
+        <p>Please confirm your account password to unlock this item.</p>
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+        <input type="hidden" name="nonce" value="${nonce}" />
+        <input type="hidden" name="credentialId" value="${credentialId}" />
+        <button type="submit">Unlock</button>
+      </form>
+    `,
+  );
+});
+
 app.post("/unlock", async (c) => {
   const parsedBody = await c.req.parseBody();
 
   const credentialId: number = parseInt(parsedBody.credentialId as string);
-  const userId: number = parseInt(parsedBody.userId as string);
   const password: string = parsedBody.password as string;
+  const nonce: string = parsedBody.nonce as string;
+
+  const { userId } = await isLoggedIn(c);
+
+  const nonceValid = await validateNonce(nonce);
 
   try {
     const selectResult: { encrypted_service_password: Buffer } =
@@ -120,7 +162,7 @@ app.post("/unlock", async (c) => {
         };
 
     const { privateKey } = await loginAs({
-      userId,
+      userId: userId ?? -1,
       password,
     });
 
@@ -129,6 +171,8 @@ app.post("/unlock", async (c) => {
       privateKey,
       new Uint8Array(selectResult.encrypted_service_password),
     );
+
+    if (!nonceValid) throw new Error("Nonce invalid. Potential replay attack?");
 
     return c.html(html`
       <p>Your decrypted password:</p><span class="hover-secret">${new TextDecoder()

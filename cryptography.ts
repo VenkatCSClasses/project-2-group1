@@ -203,22 +203,23 @@ export async function createNonce(): Promise<string> {
 }
 
 export async function validateNonce(nonce: string): Promise<boolean> {
-  let nonceRow: { expires_at: number } | undefined;
+  console.log(`Validating nonce: ${nonce}`);
+  let nonceRow: { expires_at: number }[] | undefined;
   try {
     nonceRow = await db
       .delete()
       .from("may_login_nonce")
       .where({ nonce: parseInt(nonce) })
       .returning("expires_at");
-  } catch (_) {
-    return false;
+
+    if (nonceRow != undefined && nonceRow.length === 1 && nonceRow[0].expires_at > Date.now()) {
+      return true;
+    }
+  } catch (e) {
+    console.log(e);
   }
 
-  if (nonceRow == undefined || nonceRow.expires_at > Date.now()) {
-    return false;
-  }
-
-  return true;
+  return false;
 }
 
 /**

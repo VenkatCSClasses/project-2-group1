@@ -162,11 +162,15 @@ app.get("/unlock", async (c) => {
             <br />
             <br />
             <div class="password-modal-actions">
-              <button type="submit" class="full-width">
-                <a href="/household?userId=${loginResult
+              <a
+                class="full-width"
+                href="/household?userId=${loginResult
                   .userId}&householdId=${householdId}"
-                >Done</a>
-              </button>
+              >
+                <button type="submit" class="full-width">
+                  Done
+                </button>
+              </a>
             </div>
           </div>
         </div>

@@ -197,9 +197,7 @@ function renderAccountsTable(
                   type="button"
                   hx-get="/api/keychain/unlock?credentialId=${String(
                     account.account_id,
-                  )}&householdId=${
-                  String(householdId)
-                  }"
+                  )}&householdId=${String(householdId)}"
                   hx-target="#unlock-container"
                   hx-swap="beforeend"
                   data-account-id="${String(account.account_id)}"
@@ -247,8 +245,8 @@ function renderErrorPage(
           <div class="title-bar">
             <div class="title-bar-text">SubSeer Household View</div>
             <div class="title-bar-controls">
-              <button type="button" onclick="window.location.href='/homepage'">
-                Back
+              <button type="button">
+                <a href="/homepage">Back</a>
               </button>
             </div>
           </div>
@@ -302,8 +300,8 @@ function renderPage(
           <div class="title-bar">
             <div class="title-bar-text">SubSeer Household View</div>
             <div class="title-bar-controls title-actions">
-              <button type="button" onclick="window.location.href='/homepage'">
-                Back
+              <button type="button">
+                <a href="/homepage">Back</a>
               </button>
             </div>
           </div>
@@ -446,7 +444,11 @@ function renderPage(
                 </p>
 
                 <div id="accounts-output">
-                  ${renderAccountsTable(accounts, isManager, household.household_id)}
+                  ${renderAccountsTable(
+                    accounts,
+                    isManager,
+                    household.household_id,
+                  )}
                 </div>
               </section>
             </article>

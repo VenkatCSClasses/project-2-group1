@@ -10,7 +10,7 @@
     "pg": "npm:pg@^8.20.0"
   },
   "tasks": {
-    "start": "deno run --allow-ffi --watch --allow-net --ignore-env --allow-read=. --allow-read=../../node_modules/ main.ts",
+    "start": "deno run --unstable-cron --allow-ffi --watch --allow-net --ignore-env --allow-read=. --allow-read=../../node_modules/ main.ts",
     "check": "deno fmt **/*.ts && IS_TEST=1 deno test --allow-sys --allow-ffi --allow-net --allow-env --allow-read=. tests/*.ts",
     "migrate": "deno run --allow-net --ignore-env --allow-read --allow-write migrate.ts"
   },

@@ -3,6 +3,7 @@ import { Context } from "hono";
 import { sign, verify } from "hono/jwt";
 import { getCookie, setCookie } from "hono/cookie";
 import { JWTPayload } from "hono/utils/jwt/types";
+import { Result } from "pg";
 
 // Some helper fns from mozilla examples converted to typescript
 export async function getRandomSalt(): Promise<Uint8Array> {
@@ -29,14 +30,16 @@ export async function exportRSAKeyPair(
   };
 }
 
+export const userKeyOpts: RsaHashedKeyGenParams = {
+  name: "RSA-OAEP",
+  modulusLength: 2048, // or 4096
+  publicExponent: new Uint8Array([1, 0, 1]),
+  hash: "SHA-256",
+};
+
 export async function generateRSAKeyPair(): Promise<CryptoKeyPair> {
   return await crypto.subtle.generateKey(
-    {
-      name: "RSA-OAEP",
-      modulusLength: 2048, // or 4096
-      publicExponent: new Uint8Array([1, 0, 1]),
-      hash: "SHA-256",
-    },
+    userKeyOpts,
     true, // extractable
     ["encrypt", "decrypt"], // key usages
   );
@@ -48,10 +51,7 @@ export async function importPublicKey(
   return await crypto.subtle.importKey(
     "spki",
     publicKeyBuffer, // The exported public key byte array
-    {
-      name: "RSA-OAEP",
-      hash: "SHA-256",
-    },
+    userKeyOpts,
     true, // Whether the key is extractable (i.e., can be exported again)
     ["encrypt"], // Key usages
   );
@@ -72,6 +72,7 @@ export async function importPrivateKey(
   );
 }
 
+//TODO: Real encryption
 export async function getSymmKeyFromPassword(
   password: string,
   salt: BufferSource,
@@ -102,6 +103,7 @@ export async function getSymmKeyFromPassword(
   );
 }
 
+//TODO: Real encryption
 export async function unlockKey(
   password: string,
   passwordSalt: Uint8Array,
@@ -124,6 +126,7 @@ export async function unlockKey(
   );
 }
 
+//TODO: Real encryption
 export async function generateAccountSecrets(password: string): Promise<{
   public_key: Uint8Array;
   password_salt: Uint8Array;
@@ -183,6 +186,108 @@ export async function setJWTCookie(userId: number, c: Context): Promise<void> {
     secure: true,
     maxAge: 60 * 60 * 24, // 1 day
   });
+}
+
+export async function createNonce(): Promise<string> {
+  const nonce = crypto.getRandomValues(new Int32Array(1))[0];
+  const expires_at = new Date(Date.now() + 5 * 60 * 1000);
+  const insertResult: Result = await db
+    .insert({ nonce, expires_at })
+    .into("may_login_nonce");
+
+  if (insertResult.rowCount !== 1) {
+    throw new Error("Problem creating nonce");
+  }
+
+  return nonce.toString();
+}
+
+export async function validateNonce(nonce: string): Promise<boolean> {
+  console.log(`Validating nonce: ${nonce}`);
+  let nonceRow: { expires_at: number }[] | undefined;
+  try {
+    nonceRow = await db
+      .delete()
+      .from("may_login_nonce")
+      .where({ nonce: parseInt(nonce) })
+      .returning("expires_at");
+
+    if (nonceRow != undefined && nonceRow.length === 1 && nonceRow[0].expires_at > Date.now()) {
+      return true;
+    }
+  } catch (e) {
+    console.log(e);
+  }
+
+  return false;
+}
+
+/**
+ * Will never be null (throws error instead)
+ */
+export type LoginResult = {
+  userId: number;
+  publicKey: CryptoKey;
+  privateKey: CryptoKey;
+};
+
+export type LoginRequest = {
+  userId: number;
+  username?: string;
+  password: string;
+} | {
+  userId?: number;
+  username: string;
+  password: string;
+};
+
+export async function loginAs(
+  user: LoginRequest,
+): Promise<LoginResult> {
+  const selector = (() => {
+    if (user.userId) {
+      return { user_id: user.userId };
+    } else {
+      return { username: user.username };
+    }
+  })();
+
+  try {
+    const selectResult =
+      await db.select().from("user_account").where(selector).first() ??
+        // We should run the below crypto anyways to mitigate timing attacks
+        // If the user is not valid, it should have the same exact behavior
+        {
+          user_id: -1,
+          password_salt: new Uint8Array(),
+          password_hash: new Uint8Array(),
+          encrypted_private_key: new Uint8Array(),
+          public_key: new Uint8Array(),
+        };
+
+    console.log(`${selectResult.username} is trying to be logged in`);
+
+    const userId: number = selectResult.user_id;
+    const passwordSalt: Uint8Array = selectResult.password_salt;
+    const encryptedPrivateKey: Uint8Array = selectResult.encrypted_private_key;
+    const publicKey: CryptoKey = await importPublicKey(
+      new Uint8Array(selectResult.public_key),
+    );
+
+    const privateKey = await unlockKey(
+      user.password,
+      passwordSalt,
+      encryptedPrivateKey,
+    );
+
+    return {
+      publicKey,
+      privateKey,
+      userId,
+    };
+  } catch (_) {
+    throw new Error("Could not log in with those details");
+  }
 }
 
 export async function isLoggedIn(

@@ -93,7 +93,7 @@ app.put("/store", async (c) => {
 
     c.res.headers.set(
       "Hx-Redirect",
-      `/household?userId=${user.userId}&householdId=${householdId}`,
+      `/household?householdId=${householdId}`,
     );
 
     return c.html("<p>Credentials shared successfully.</p>");
@@ -164,8 +164,7 @@ app.get("/unlock", async (c) => {
             <div class="password-modal-actions">
               <a
                 class="full-width"
-                href="/household?userId=${loginResult
-                  .userId}&householdId=${householdId}"
+                href="/household?householdId=${householdId}"
               >
                 <button type="submit" class="full-width">
                   Done

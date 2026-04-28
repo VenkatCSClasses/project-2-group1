@@ -65,12 +65,10 @@ app.get("/", async (c: Context) => {
     "househildId",
     "househild_id",
   ]);
-  const userIdRaw = readQueryParam(c, ["userId", "userID", "user_id"]);
   const householdId = parsePositiveInteger(householdIdRaw);
-  const queryUserId = parsePositiveInteger(userIdRaw);
 
-  const { loggedIn, userId: sessionUserId } = await isLoggedIn(c);
-  const userId = queryUserId ?? (loggedIn ? sessionUserId ?? null : null);
+  const loginResult = await isLoggedIn(c);
+  const userId = loginResult.userId;
 
   if (householdId === null) {
     return c.html(
@@ -78,10 +76,10 @@ app.get("/", async (c: Context) => {
     );
   }
 
-  if (userId === null) {
+  if (!loginResult.loggedIn) {
     return c.html(
       renderErrorPage(
-        "You must be logged in (or pass a valid userId) to view a household.",
+        "You must be logged in to view a household.",
       ),
     );
   }

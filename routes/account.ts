@@ -3,13 +3,17 @@ import { html } from "@hono/hono/html";
 import { db } from "../database/knex.ts";
 import { Result } from "pg";
 import {
+  createNonce,
   generateAccountSecrets,
   importPublicKey,
   isLoggedIn,
+  loginAs,
   setJWTCookie,
   unlockKey,
+  validateNonce,
 } from "../cryptography.ts";
 import { deleteCookie } from "hono/cookie";
+import { sign } from "node:crypto";
 
 const app = new Hono();
 
@@ -37,6 +41,15 @@ const loginSucceed = (c: Context) => {
   `);
 };
 
+const signupFail = html`
+  <p>
+    Password must be between 8 and 512 characters. Username must be between 3 and
+    128 characters and unique. Please
+    <a href="/signup">try again</a>
+    with a different combination.
+  </p>
+`;
+
 app.put("/signup", async (c) => {
   // deno-lint-ignore no-explicit-any
   if ((await isLoggedIn(c as any)).loggedIn) {
@@ -49,23 +62,11 @@ app.put("/signup", async (c) => {
   const password: string = parsedBody.password as string;
 
   if (password.length < 8 || password.length > 512) {
-    return c.html(html`
-      <p>
-        Password must be between 8 and 512 characters. Please
-        <a href="/signup">try again</a>
-        with a different password.
-      </p>
-    `);
+    return c.html(signupFail);
   }
 
   if (username.length < 3 || password.length > 128) {
-    return c.html(html`
-      <p>
-        Username must be between 3 and 128 characters. Please
-        <a href="/signup">try again</a>
-        with a different username.
-      </p>
-    `);
+    return c.html(signupFail);
   }
 
   const secrets = await generateAccountSecrets(password);
@@ -87,13 +88,7 @@ app.put("/signup", async (c) => {
     `);
   } catch (e) {
     console.log(e);
-    return c.html(html`
-      <p>
-        That username may already be taken. Please <a
-          href="/signup"
-        >try again</a> with a different username.
-      </p>
-    `);
+    return c.html(signupFail);
   }
 });
 
@@ -111,13 +106,11 @@ app.get("/login", async (c) => {
     return loginSucceed(c);
   }
 
-  const nonce = crypto.getRandomValues(new Int32Array(1))[0];
-  const expires_at = new Date(Date.now() + 5 * 60 * 1000);
-  const insertResult: Result = await db
-    .insert({ nonce, expires_at })
-    .into("may_login_nonce");
+  let nonce: string;
 
-  if (insertResult.rowCount !== 1) {
+  try {
+    nonce = await createNonce();
+  } catch (_) {
     return c.html(
       html`
         <p>Failed to generate login nonce: please refresh the page and try again.</p>
@@ -125,7 +118,7 @@ app.get("/login", async (c) => {
     );
   }
 
-  console.log(`Created login form nonce=${nonce}`, insertResult);
+  console.log(`Created login form nonce=${nonce}`);
 
   return c.html(
     html`
@@ -153,56 +146,24 @@ app.post("/login", async (c) => {
 
   const username: string = parsedBody.username as string;
   const password: string = parsedBody.password as string;
-  const nonce: number = parseInt(parsedBody.nonce as string);
+  const nonce: string = parsedBody.nonce as string;
 
   // Mitigation for replay attacks where someone sends the same
   // request that a user sent (encrypted). They will therefore
   // have the same nonce and this will fail
-  let nonceRow: { expires_at: number } | undefined;
-  try {
-    nonceRow = await db
-      .delete()
-      .from("may_login_nonce")
-      .where({ nonce })
-      .returning("expires_at");
-  } catch (e) {
-    console.log(e);
-    nonceRow = undefined;
-  }
-
-  console.log(nonceRow, `given nonce=${nonce}`);
-
-  if (nonceRow == undefined || nonceRow.expires_at > Date.now()) {
-    return c.html(loginFail);
-  }
-
-  const selectResult =
-    await db.select().from("user_account").where({ username }).first() ??
-      // We should run the below crypto anyways to mitigate timing attacks
-      // If the user is not valid, it should have the same exact behavior
-      {
-        user_id: -1,
-        password_salt: new Uint8Array(),
-        password_hash: new Uint8Array(),
-        encrypted_private_key: new Uint8Array(),
-        public_key: new Uint8Array(),
-      };
-
-  console.log(selectResult, `selected user for username=${username}`);
+  const nonceValid = await validateNonce(nonce);
+  // The failure case is later to mitigate timing attacks.
 
   try {
-    const userId: number = selectResult.user_id;
-    const passwordSalt: Uint8Array = selectResult.password_salt;
-    const encryptedPrivateKey: Uint8Array = selectResult.encrypted_private_key;
-    const publicKey: CryptoKey = await importPublicKey(
-      new Uint8Array(selectResult.public_key),
-    );
-
-    const privateKey = await unlockKey(
+    const { userId } = await loginAs({
+      username,
       password,
-      passwordSalt,
-      encryptedPrivateKey,
-    );
+    });
+
+    // Fail on invalid nonce (important to be here for timing attacks)
+    if (!nonceValid) {
+      return c.html(loginFail);
+    }
 
     // Typescript weirdness when passing context to another function
     // deno-lint-ignore no-explicit-any

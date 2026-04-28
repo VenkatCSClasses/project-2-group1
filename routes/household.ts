@@ -233,59 +233,6 @@ app.get("/members", async (c) => {
   return c.json({ resource: "household_members", data });
 });
 
-app.post("/members", async (c) => {
-  const body = (await c.req.json()) as Partial<CreateHouseholdMemberInput>;
-
-  if (!body.household_id || !body.name || !body.role) {
-    return c.json({ error: "household_id, name, and role are required" }, 400);
-  }
-
-  const household = await db("household")
-    .select("household_id")
-    .where({ household_id: body.household_id })
-    .first();
-
-  if (!household) {
-    return c.json({ error: "Household not found" }, 404);
-  }
-
-  const insertedUser = await db("user_account")
-    .insert({
-      username: body.name,
-      public_key: encoder.encode("subseer-public-key"),
-      password_salt: encoder.encode("subseer-salt"),
-      encrypted_private_key: encoder.encode("subseer-private-key"),
-    }, ["user_id"]);
-
-  const userId = readInsertedId(insertedUser, "user_id");
-  if (userId === null) {
-    return c.json({ error: "Failed to create household member" }, 500);
-  }
-
-  await db("household_membership")
-    .insert({
-      user_id: userId,
-      household_id: body.household_id,
-      role: body.role,
-    });
-
-  const createdMembership = await db("household_membership")
-    .select("created_at", "updated_at", "household_id", "role")
-    .where({ user_id: userId, household_id: body.household_id })
-    .first();
-
-  const newMember: HouseholdMember = {
-    member_id: userId,
-    household_id: createdMembership.household_id,
-    name: body.name,
-    role: createdMembership.role,
-    created_at: String(createdMembership.created_at),
-    updated_at: String(createdMembership.updated_at),
-  };
-
-  return c.json(newMember, 201);
-});
-
 app.delete("/members/:memberId", async (c) => {
   const memberId = Number(c.req.param("memberId"));
   const householdId = parseOptionalHouseholdId(
@@ -372,6 +319,7 @@ app.get("/accounts", async (c) => {
   }
 
   const rows = await query;
+  //TODO: Real encryption
   const data: StreamingAccount[] = rows.map((row) => ({
     account_id: row.account_id,
     household_id: row.household_id,
@@ -444,6 +392,7 @@ app.post("/accounts", async (c) => {
     );
   }
 
+  //TODO: Real encryption
   await db("user_vault_access").insert(
     members.map((member) => ({
       user_id: member.user_id,
@@ -568,6 +517,7 @@ app.post("/accounts/:accountId/reveal", async (c) => {
     return c.json({ error: "User account not found" }, 404);
   }
 
+  //TODO: Real encryption
   try {
     await unlockKey(
       userPassword,
@@ -588,6 +538,7 @@ app.post("/accounts/:accountId/reveal", async (c) => {
   }
 
   const passwordBytes = access.encrypted_service_password;
+  //TODO: Real encryption
   const password = typeof passwordBytes === "string"
     ? passwordBytes
     : decoder.decode(passwordBytes);

@@ -130,3 +130,190 @@ main {
 #responseMember {
     min-height: 1.5em;
 }
+
+
+/* Chatgpt generated styles for blakes page */
+
+.household-card {
+    display: grid;
+    gap: 12px;
+}
+
+.section-panel {
+    padding: 12px;
+    border: 2px inset #fff;
+    background: #c0c0c0;
+}
+
+.top-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
+    gap: 12px;
+}
+
+.meta-row {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 7px 10px;
+    margin: 0;
+}
+
+.meta-row dt {
+    font-weight: 700;
+}
+
+.meta-row dd {
+    margin: 0;
+}
+
+.accounts-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 7px;
+    max-width: 460px;
+}
+
+.accounts-form button {
+    width: 100%;
+}
+
+.accounts-form input {
+    width: 100%;
+}
+
+.account-table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.account-table th,
+.account-table td {
+    vertical-align: top;
+}
+
+.account-table td:last-child {
+    width: 92px;
+}
+
+.account-table th:nth-child(3),
+.account-table th:nth-child(4),
+.account-table td:nth-child(3),
+.account-table td:nth-child(4) {
+    text-align: right;
+}
+
+.status {
+    min-height: 18px;
+    margin-top: 8px;
+}
+
+.copy-password-btn {
+    width: 74px;
+}
+
+.account-delete-btn {
+    width: 74px;
+}
+
+.password-cell {
+    text-align: right;
+}
+
+#members-output {
+    margin: 8px 0 0;
+    padding-left: 22px;
+}
+
+.member-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.manager-view[hidden] {
+    display: none;
+}
+
+.section-title {
+    margin: 0 0 7px;
+}
+
+.viewer-context {
+    margin: 0 0 10px;
+    padding: 8px 10px;
+    border: 2px inset #fff;
+    background: #c0c0c0;
+    font-weight: 700;
+}
+
+.viewer-context.manager {
+    background: #d6e7f5;
+}
+
+.viewer-context.member {
+    background: #efe9d2;
+}
+
+.manager-only-note {
+    margin: 8px 0;
+    font-size: 0.95rem;
+}
+
+.join-code-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.join-code-copy-btn {
+    min-width: 58px;
+}
+
+.members {
+    background: #c0c0c0;
+}
+
+.overview {
+    background: #c0c0c0;
+}
+
+.password-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.password-modal-overlay[hidden] {
+    display: none;
+}
+
+.password-modal-window {
+    width: min(420px, calc(100vw - 24px));
+}
+
+.password-modal-form {
+    display: grid;
+    gap: 8px;
+}
+
+.password-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+@media (max-width: 760px) {
+    .top-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .meta-row {
+        grid-template-columns: 108px 1fr;
+    }
+}

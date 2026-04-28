@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -c '`' /Users/robog/Documents/Code/project-2-group-1/static/household.html)",
+      "Bash(deno --version)",
+      "Bash(deno check *)"
+    ]
+  }
+}

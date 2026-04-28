@@ -8,11 +8,20 @@ import accountRoutes from "./routes/account.ts";
 import keychainRoutes from "./routes/keychain.ts";
 import { addHeadHTML, upgradeHTTPS } from "./middlewares.ts";
 import homepageRoutes from "./routes/homepage.ts";
-import { runMigrations } from "./database/knex.ts";
+import { runMigrations, db } from "./database/knex.ts";
 import householdStaticRoutes from "./routes/household_static.ts";
 
 // Run db migrations if not already applied
 await runMigrations();
+
+// Clean up expired nonces every hour
+Deno.cron("cleanup-expired-nonces", "0 * * * *", async () => {
+  try {
+    await db("may_login_nonce").where("expires_at", "<", db.fn.now()).del();
+  } catch (error) {
+    console.error("Failed to clean up expired nonces:", error);
+  }
+});
 
 const app = new Hono();
 

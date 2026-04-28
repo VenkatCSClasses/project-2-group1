@@ -277,6 +277,7 @@ app.delete("/delete", async (c) => {
       }).del();
     });
 
+    c.res.headers.set("Hx-Redirect", `/household?householdId=${householdId}`);
     return c.html("<p>Account deleted successfully.</p>");
   } catch (e) {
     console.log(e);

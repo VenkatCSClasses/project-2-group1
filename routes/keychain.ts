@@ -91,6 +91,11 @@ app.put("/store", async (c) => {
       await trx("user_vault_access").insert(userVaultAccessData);
     });
 
+    c.res.headers.set(
+      "Hx-Redirect",
+      `/household?userId=${user.userId}&householdId=${householdId}`,
+    );
+
     return c.html("<p>Credentials shared successfully.</p>");
   } catch (e) {
     console.log(e);
@@ -102,6 +107,7 @@ app.put("/store", async (c) => {
 
 app.get("/unlock", async (c) => {
   const credentialId: number = parseInt(c.req.query("credentialId") as string);
+  const householdId: number = parseInt(c.req.query("householdId") as string);
 
   // deno-lint-ignore no-explicit-any
   const loginResult = await isLoggedIn(c as any);
@@ -128,14 +134,43 @@ app.get("/unlock", async (c) => {
 
   return c.html(
     html`
-      <form class="login-form" hx-post="/api/keychain/unlock" hx-swap="outerHTML">
-        <p>Please confirm your account password to unlock this item.</p>
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" required>
-        <input type="hidden" name="nonce" value="${nonce}" />
-        <input type="hidden" name="credentialId" value="${credentialId}" />
-        <button type="submit">Unlock</button>
-      </form>
+      <div id="password-modal-overlay" class="password-modal-overlay" hidden>
+        <div
+          class="window password-modal-window"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="password-modal-title"
+        >
+          <div class="title-bar">
+            <div id="password-modal-title" class="title-bar-text">
+              Confirm Your Password
+            </div>
+          </div>
+          <div class="window-body">
+            <form
+              class="login-form"
+              hx-post="/api/keychain/unlock"
+              hx-swap="outerHTML"
+            >
+              <p>Please confirm your account password to unlock this item.</p>
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password" required>
+              <input type="hidden" name="nonce" value="${nonce}" />
+              <input type="hidden" name="credentialId" value="${credentialId}" />
+              <button type="submit">Unlock</button>
+            </form>
+            <br />
+            <br />
+            <div class="password-modal-actions">
+              <button type="submit" class="full-width">
+                <a href="/household?userId=${loginResult
+                  .userId}&householdId=${householdId}"
+                >Done</a>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     `,
   );
 });
@@ -181,6 +216,70 @@ app.post("/unlock", async (c) => {
   } catch (e) {
     console.log(e);
     return c.html("<p>Cannot unlock that password. Try again?</p>");
+  }
+});
+
+app.delete("/delete", async (c) => {
+  try {
+    const accountId: number = parseInt(c.req.query("accountId") as string);
+
+    // deno-lint-ignore no-explicit-any
+    const user = await isLoggedIn(c as any);
+
+    if (!user.loggedIn) throw new Error("Must be logged in to delete.");
+
+    // Get the household for this account
+    const vaultPassword: { group_id: number } | undefined = await db(
+      "shared_vault_password",
+    )
+      .select("group_id")
+      .where({ item_id: accountId })
+      .first() as { group_id: number } | undefined;
+
+    if (!vaultPassword) {
+      throw new Error("Account not found.");
+    }
+
+    const householdId = vaultPassword.group_id;
+
+    // Check that user is a manager in this household
+    const membership: { role: string } | undefined = await db(
+      "household_membership",
+    )
+      .select("role")
+      .where({
+        household_id: householdId,
+        user_id: user.userId,
+      })
+      .first() as { role: string } | undefined;
+
+    if (!membership) {
+      throw new Error("User is not a member of this household.");
+    }
+
+    if (String(membership.role).trim().toLowerCase() !== "manager") {
+      throw new Error("Only managers can delete accounts.");
+    }
+
+    // Delete the account with cascading deletes
+    await db.transaction(async (trx) => {
+      // Delete user vault access records first
+      await trx("user_vault_access").where({
+        item_id: accountId,
+      }).del();
+
+      // Delete the shared vault password
+      await trx("shared_vault_password").where({
+        item_id: accountId,
+      }).del();
+    });
+
+    return c.html("<p>Account deleted successfully.</p>");
+  } catch (e) {
+    console.log(e);
+    return c.html(
+      "<p>Failed to delete account. Please try again or contact an administrator.</p>",
+    );
   }
 });
 

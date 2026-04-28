@@ -288,10 +288,6 @@ main {
     z-index: 999;
 }
 
-.password-modal-overlay[hidden] {
-    display: none;
-}
-
 .password-modal-window {
     width: min(420px, calc(100vw - 24px));
 }
@@ -316,4 +312,24 @@ main {
     .meta-row {
         grid-template-columns: 108px 1fr;
     }
+}
+
+.password-modal-overlay {
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: rgba(0, 0, 0, 0.35);
+    z-index: 300;
+}
+
+.hover-secret {
+    color: black;
+    background-color: black;
+}
+
+.hover-secret:hover {
+    color: white;
+    background-color: black;
 }

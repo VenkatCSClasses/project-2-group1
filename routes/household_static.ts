@@ -1,4 +1,5 @@
 // Assisted-by: GitHub Copilot:GPT-5.3-Codex [apply_patch] [get_errors]
+// and claude opus 4.7 to fix the mess :)
 
 import { Context, Hono } from "@hono/hono";
 import { html, raw } from "hono/html";
@@ -166,6 +167,7 @@ function renderMembers(
 function renderAccountsTable(
   accounts: AccountRow[],
   isManager: boolean,
+  householdId: number,
 ): HtmlEscapedString | Promise<HtmlEscapedString> {
   if (accounts.length === 0) {
     return html`
@@ -193,6 +195,13 @@ function renderAccountsTable(
                 <button
                   class="copy-password-btn"
                   type="button"
+                  hx-get="/api/keychain/unlock?credentialId=${String(
+                    account.account_id,
+                  )}&householdId=${
+                  String(householdId)
+                  }"
+                  hx-target="#unlock-container"
+                  hx-swap="beforeend"
                   data-account-id="${String(account.account_id)}"
                   aria-label="Copy password"
                 >
@@ -203,6 +212,12 @@ function renderAccountsTable(
                 <button
                   type="button"
                   class="account-delete-btn manager-view"
+                  hx-delete="/api/keychain/delete?accountId=${String(
+                    account.account_id,
+                  )}"
+                  hx-swap="outerHTML swap:1s"
+                  hx-target="#account-status"
+                  hx-confirm="Are you sure you want to delete this account?"
                   data-account-id="${String(account.account_id)}"
                   ${raw(isManager ? "" : "hidden")}
                 >
@@ -381,6 +396,9 @@ function renderPage(
                   id="accounts-form"
                   class="accounts-form"
                   aria-label="Add streaming account"
+                  hx-put="/api/keychain/store"
+                  hx-swap="outerHTML swap:1s"
+                  hx-target="#account-status"
                 >
                   <label for="service-name">Service</label>
                   <input
@@ -395,7 +413,7 @@ function renderPage(
                   <label for="account-identifier">Email Address</label>
                   <input
                     id="account-identifier"
-                    name="accountIdentifier"
+                    name="serviceUsername"
                     type="email"
                     placeholder="account@domain.com"
                     required
@@ -405,13 +423,16 @@ function renderPage(
                   <label for="account-password">Service Password</label>
                   <input
                     id="account-password"
-                    name="accountPassword"
+                    name="servicePassword"
                     type="text"
                     placeholder="Password"
                     required
                     autocomplete="current-password"
                   >
 
+                  <input type="hidden" name="householdId" value="${String(
+                    household.household_id,
+                  )}">
                   <button type="submit">Add account</button>
                 </form>
                 <p id="manager-only-note" class="manager-only-note">${managerOnlyNote}</p>
@@ -425,50 +446,14 @@ function renderPage(
                 </p>
 
                 <div id="accounts-output">
-                  ${renderAccountsTable(accounts, isManager)}
+                  ${renderAccountsTable(accounts, isManager, household.household_id)}
                 </div>
               </section>
             </article>
           </div>
         </div>
 
-        <div id="password-modal-overlay" class="password-modal-overlay" hidden>
-          <div
-            class="window password-modal-window"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="password-modal-title"
-          >
-            <div class="title-bar">
-              <div id="password-modal-title" class="title-bar-text">
-                Confirm Your Password
-              </div>
-            </div>
-            <div class="window-body">
-              <form id="password-modal-form" class="password-modal-form">
-                <p>Enter your user password to access this service password.</p>
-                <label for="password-modal-input">User Password</label>
-                <input
-                  id="password-modal-input"
-                  type="password"
-                  autocomplete="current-password"
-                  required
-                >
-                <p
-                  id="password-modal-error"
-                  class="status"
-                  role="status"
-                  aria-live="polite"
-                >
-                </p>
-                <div class="password-modal-actions">
-                  <button id="password-modal-cancel" type="button">Cancel</button>
-                  <button id="password-modal-confirm" type="submit">Confirm</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+        <div id="unlock-container"></div>
       </body>
     </html>
   `;

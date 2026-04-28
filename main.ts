@@ -9,7 +9,6 @@ import keychainRoutes from "./routes/keychain.ts";
 import { addHeadHTML, upgradeHTTPS } from "./middlewares.ts";
 import homepageRoutes from "./routes/homepage.ts";
 import { runMigrations } from "./database/knex.ts";
-import householdRoutes from "./routes/household.ts";
 import householdStaticRoutes from "./routes/household_static.ts";
 
 // Run db migrations if not already applied
@@ -53,7 +52,6 @@ app.use(
 // All routes go here =============================================
 
 app.route("/api/account", accountRoutes);
-app.route("/api/household", householdRoutes);
 app.route("/household", householdStaticRoutes);
 app.route("/api/homepage", homepageRoutes);
 app.route("/api/keychain", keychainRoutes);

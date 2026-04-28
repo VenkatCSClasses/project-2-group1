@@ -236,7 +236,7 @@ function renderErrorPage(
     <html lang="en">
       <head>
         <!-- INSERT_HEAD_HTML -->
-        <title>Household Route</title>
+        <title>Household Not Found</title>
       </head>
       <body>
         <div class="window" style="max-width:560px;margin:48px auto;">
@@ -286,7 +286,7 @@ function renderPage(
     <!DOCTYPE html>
     <html lang="en">
       <head>
-        <title>Household Route</title>
+        <title>Household: ${household.household_name}</title>
         <!-- INSERT_HEAD_HTML -->
       </head>
       <body
